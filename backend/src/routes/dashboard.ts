@@ -8,7 +8,7 @@ router.use(authMiddleware);
 // Convert cents-based currencies to USD for aggregation
 const toUsd = (value: number, currency: string): number => {
   const cur = currency.toUpperCase();
-  if (cur === 'USC' || cur === 'UST') return value / 100;
+  if (cur === 'USC' || cur === 'UST' || cur === 'USDC') return value / 100;
   return value;
 };
 
