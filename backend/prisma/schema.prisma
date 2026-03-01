@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  password         String
+  name             String?
+  role             String    @default("user")
+  telegramBotToken String?
+  telegramChatId   String?
+  // Scheduled Reports
+  reportEnabled    Boolean   @default(false)
+  reportFrequency  String    @default("daily")
+  reportTime       String    @default("20:00")
+  reportDay        Int       @default(1)
+  // Preferences
+  language         String    @default("en")
+  theme            String    @default("dark")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  accounts         Account[]
+  accountGroups    AccountGroup[]
+  notificationLogs NotificationLog[]
+  auditLogs        AuditLog[]
+}
+
+model AccountGroup {
+  id        String    @id @default(uuid())
+  name      String
+  color     String    @default("#6b7280")
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts  Account[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Account {
+  id            String   @id @default(uuid())
+  name          String
+  broker        String
+  accountNumber String
+  apiKey        String   @unique
+  server        String   @default("Unknown")
+  currency      String   @default("USD")
+  leverage      Int      @default(100)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupId       String?
+  group         AccountGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  // Alert thresholds (null = disabled)
+  alertDrawdown    Float?
+  alertEquityBelow Float?
+  alertMarginLevel Float?
+  alertOffline     Boolean  @default(false)
+  // Drawdown Protection
+  protectionEnabled  Boolean  @default(false)
+  protectionDrawdown Float?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  equitySnapshots  EquitySnapshot[]
+  closedTrades     ClosedTrade[]
+
+  @@index([userId])
+  @@index([apiKey])
+  @@index([groupId])
+}
+
+model EquitySnapshot {
+  id        String   @id @default(uuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  equity    Float
+  balance   Float
+  drawdown  Float
+  timestamp DateTime @default(now())
+
+  @@index([accountId, timestamp])
+  @@index([accountId])
+}
+
+model ClosedTrade {
+  id         String   @id @default(uuid())
+  accountId  String
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  ticket     Int
+  symbol     String
+  type       String
+  lots       Float
+  openPrice  Float
+  closePrice Float
+  profit     Float
+  openTime   DateTime
+  closeTime  DateTime @default(now())
+  sl         Float    @default(0)
+  tp         Float    @default(0)
+
+  @@unique([accountId, ticket])
+  @@index([accountId, closeTime])
+  @@index([accountId])
+}
+
+model NotificationLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId String?
+  type      String
+  message   String
+  success   Boolean  @default(true)
+  sentAt    DateTime @default(now())
+
+  @@index([userId, sentAt])
+  @@index([userId])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action       String
+  resourceType String?
+  resourceId   String?
+  details      String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action])
+}

@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tail:*)",
+      "Bash(cd C:/Users/Keng/SENTINEL/frontend && npx tailwindcss init -p 2>&1)",
+      "Bash(cd C:/Users/Keng/SENTINEL/backend && npx tsc --noEmit 2>&1)",
+      "Bash(cd C:/Users/Keng/SENTINEL/frontend && npx tsc --noEmit 2>&1)",
+      "Bash(true:*)",
+      "Bash(cd:*)",
+      "Bash(sleep 2:*)",
+      "Bash(sleep 3:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma init:*)",
+      "Bash(npx prisma:*)",
+      "Bash(python3:*)",
+      "Bash(__NEW_LINE_7f17f04582677c6e__ echo \"\")",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImE5ZjdkZTMyLTk2MTItNGRiMS04ODkyLTIwYTM3OTk3NWRhOCIsImVtYWlsIjoiYWRtaW5Ac2VudGluZWwuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzcxOTUxMDgxLCJleHAiOjE3NzIwMzc0ODF9.dUA_K0BaIb7lenyuknuCGQX-OWBKpruph3iSTr47YC0\")",
+      "Bash(python -m json.tool:*)",
+      "Bash(node -e:*)",
+      "Bash(ls:*)",
+      "Bash(echo:*)",
+      "Bash(printenv:*)",
+      "Bash(npx vite build)",
+      "Bash(npm run build:*)",
+      "Bash(find:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git -C C:/Users/Keng/SENTINEL status --short)"
+    ]
+  }
+}

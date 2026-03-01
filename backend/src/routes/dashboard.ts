@@ -1,0 +1,87 @@
+import { Router, Response } from 'express';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { runtimeStore } from '../services/runtimeStore';
+
+const router = Router();
+router.use(authMiddleware);
+
+router.get('/overview', (req: AuthRequest, res: Response) => {
+  const accounts = runtimeStore.getAccountsByUser(req.user!.id);
+  const online = accounts.filter(a => a.status === 'online');
+  const offline = accounts.filter(a => a.status === 'offline');
+
+  const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
+  const totalEquity = accounts.reduce((s, a) => s + a.equity, 0);
+  const totalProfit = accounts.reduce((s, a) => s + a.profit, 0);
+  const totalOpenLots = accounts.reduce((s, a) => s + a.openLots, 0);
+  const totalBuyLots = accounts.reduce((s, a) => s + a.buyLots, 0);
+  const totalSellLots = accounts.reduce((s, a) => s + a.sellLots, 0);
+  const totalPending = accounts.reduce((s, a) => s + a.pendingOrders, 0);
+
+  res.json({
+    totalAccounts: accounts.length,
+    onlineAccounts: online.length,
+    offlineAccounts: offline.length,
+    totalBalance: parseFloat(totalBalance.toFixed(2)),
+    totalEquity: parseFloat(totalEquity.toFixed(2)),
+    totalProfit: parseFloat(totalProfit.toFixed(2)),
+    totalOpenLots: parseFloat(totalOpenLots.toFixed(2)),
+    totalBuyLots: parseFloat(totalBuyLots.toFixed(2)),
+    totalSellLots: parseFloat(totalSellLots.toFixed(2)),
+    totalPendingOrders: totalPending,
+  });
+});
+
+router.get('/heatmap/accounts', (req: AuthRequest, res: Response) => {
+  const accounts = runtimeStore.getAccountsByUser(req.user!.id);
+  const data = accounts.map(a => ({
+    id: a.id,
+    name: a.name,
+    broker: a.broker,
+    status: a.status,
+    balance: a.balance,
+    equity: a.equity,
+    drawdown: a.drawdown,
+    marginLevel: a.marginLevel,
+    profit: a.profit,
+  }));
+  res.json(data);
+});
+
+router.get('/heatmap/orders', (req: AuthRequest, res: Response) => {
+  const accounts = runtimeStore.getAccountsByUser(req.user!.id);
+  const orders: object[] = [];
+  accounts.forEach(account => {
+    account.orders.forEach(order => {
+      const openTime = new Date(order.openTime);
+      const durationMs = Date.now() - openTime.getTime();
+      const durationMin = Math.floor(durationMs / 60000);
+      orders.push({
+        ...order,
+        accountName: account.name,
+        accountId: account.id,
+        broker: account.broker,
+        durationMin,
+      });
+    });
+  });
+  res.json(orders);
+});
+
+router.get('/heatmap/pending', (req: AuthRequest, res: Response) => {
+  const accounts = runtimeStore.getAccountsByUser(req.user!.id);
+  const pending: object[] = [];
+  accounts.forEach(account => {
+    account.pending.forEach(order => {
+      pending.push({
+        ...order,
+        accountName: account.name,
+        accountId: account.id,
+        broker: account.broker,
+      });
+    });
+  });
+  res.json(pending);
+});
+
+export default router;

@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-tertiary: #1f2937;
+    --bg-card: #161d2e;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --accent-blue: #3b82f6;
+    --accent-purple: #8b5cf6;
+    --text-primary: #e5e7eb;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+    --border-color: #1f2937;
+  }
+
+  :root.light {
+    --bg-primary: #f1f5f9;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #e2e8f0;
+    --bg-card: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --border-color: #e2e8f0;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+  }
+  .light ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+  }
+  .light ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-bg-card rounded-xl p-4;
+    border: 1px solid var(--border-color);
+  }
+
+  .btn-primary {
+    @apply bg-accent-blue hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-150 text-sm;
+  }
+
+  .btn-danger {
+    @apply bg-danger hover:bg-red-600 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-150 text-sm;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent font-medium px-4 py-2 rounded-lg transition-colors duration-150 text-sm;
+    border: 1px solid var(--border-color);
+  }
+
+  .mono {
+    @apply font-mono;
+  }
+
+  .value-flash-green {
+    animation: flashGreen 0.6s ease-out;
+  }
+
+  .value-flash-red {
+    animation: flashRed 0.6s ease-out;
+  }
+
+  .status-online {
+    @apply text-success;
+  }
+  .status-offline {
+    @apply text-neutral;
+  }
+}
+
+/* Light mode text overrides */
+.light .text-white { color: #1e293b; }
+.light .text-gray-300 { color: #475569; }
+.light .text-gray-400 { color: #64748b; }
+.light .text-gray-500 { color: #94a3b8; }
+.light .text-gray-600 { color: #94a3b8; }
+.light .border-gray-700 { border-color: #e2e8f0; }
+.light .border-gray-800 { border-color: #e2e8f0; }
+.light .border-gray-800\/50 { border-color: rgba(226, 232, 240, 0.5); }
+.light .bg-gray-800 { background-color: #e2e8f0; }
+.light .bg-gray-800\/30 { background-color: rgba(226, 232, 240, 0.3); }
+.light .bg-gray-700 { background-color: #e2e8f0; }
+.light .hover\:bg-gray-800:hover { background-color: #e2e8f0; }
+.light .hover\:bg-gray-600:hover { background-color: #cbd5e1; }
+.light .hover\:text-white:hover { color: #1e293b; }
+.light .bg-bg-primary { background-color: var(--bg-primary); }
+.light .bg-bg-secondary { background-color: var(--bg-secondary); }
+.light .placeholder-gray-600::placeholder { color: #94a3b8; }
+
+/* Light mode inputs */
+.light input, .light select, .light textarea {
+  color: #1e293b;
+}
+.light input::placeholder, .light select::placeholder, .light textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Light mode dropdown */
+.light [data-radix-popper-content-wrapper] [role="menu"] {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+@keyframes flashGreen {
+  0% { background-color: rgba(34, 197, 94, 0.35); border-radius: 4px; }
+  100% { background-color: transparent; }
+}
+
+@keyframes flashRed {
+  0% { background-color: rgba(239, 68, 68, 0.35); border-radius: 4px; }
+  100% { background-color: transparent; }
+}
