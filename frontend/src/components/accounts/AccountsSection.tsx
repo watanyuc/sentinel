@@ -254,11 +254,12 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
     name: '', broker: '', accountNumber: '', apiKey: generateApiKey(),
     server: '', currency: 'USD', leverage: '100',
   });
+  // Note: broker, server, leverage are auto-filled by EA push — not shown in form
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.broker || !form.accountNumber || !form.apiKey) {
+    if (!form.name || !form.accountNumber || !form.apiKey) {
       addToast({ type: 'warning', title: 'Fill in all required fields' });
       return;
     }
@@ -290,7 +291,6 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
     <Dialog open onClose={onClose} title="Add New Account">
       <form onSubmit={handleSubmit} className="space-y-3">
         {field('name', 'Bot Name *', 'Gold Scalper Bot')}
-        {field('broker', 'Broker *', 'XM Global')}
         {field('accountNumber', 'Account Number *', '123456')}
         <div>
           <label className="text-xs text-gray-400 block mb-1">API Key *</label>
@@ -312,23 +312,19 @@ const AddAccountDialog = ({ onClose, onCreated }: { onClose: () => void; onCreat
             </button>
           </div>
         </div>
-        {field('server', 'Server', 'XM-Real15')}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-gray-400 block mb-1">Currency</label>
-            <select
-              value={form.currency}
-              onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}
-              className="w-full bg-bg-primary border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent-blue"
-            >
-              <option value="USD">USD</option>
-              <option value="USDC">USDC (Cent)</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
-              <option value="JPY">JPY</option>
-            </select>
-          </div>
-          {field('leverage', 'Leverage', '500', 'number')}
+        <div>
+          <label className="text-xs text-gray-400 block mb-1">Currency</label>
+          <select
+            value={form.currency}
+            onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}
+            className="w-full bg-bg-primary border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent-blue"
+          >
+            <option value="USD">USD</option>
+            <option value="USDC">USDC (Cent)</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="JPY">JPY</option>
+          </select>
         </div>
         <div className="flex gap-3 justify-end pt-2">
           <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>

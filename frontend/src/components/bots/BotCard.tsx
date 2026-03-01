@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Account, AccountGroup } from '../../types';
-import { formatCurrency, formatLots, formatPercent, getDrawdownColor, getMarginLevelColor, getProfitColor } from '../../utils/formatters';
+import { formatCurrency, formatLots, formatPercent, getDrawdownColor, getMarginLevelColor } from '../../utils/formatters';
 import { FlashNumber } from '../ui/FlashNumber';
 import { CloseAllDialog } from './CloseAllDialog';
 import { ProtectionSettings } from '../settings/ProtectionSettings';
@@ -63,7 +63,7 @@ export const BotCard = ({ account }: Props) => {
   return (
     <>
       <div className={`card transition-all duration-300 ${!isOnline ? 'opacity-60' : ''}`}>
-        {/* Row 1: Name + Status + Financial Data */}
+        {/* Row 1: Name + Financial Data + P/L */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           {/* Name & Status */}
           <div className="flex items-center gap-2 min-w-[180px]">
@@ -128,7 +128,7 @@ export const BotCard = ({ account }: Props) => {
             </div>
           </div>
 
-          {/* Financial Data — inline */}
+          {/* Financial Data — inline (no Margin / Free Margin) */}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 flex-1">
             <div className="min-w-[90px]">
               <div className="text-[10px] text-gray-500">Balance</div>
@@ -139,23 +139,6 @@ export const BotCard = ({ account }: Props) => {
               <div className="font-mono text-sm font-medium">
                 <FlashNumber value={account.equity} format={fmt} positiveGreen={false} className="text-white" />
               </div>
-            </div>
-            <div className="min-w-[80px]">
-              <div className="text-[10px] text-gray-500">P/L</div>
-              <FlashNumber
-                value={account.profit}
-                format={(v) => `${v >= 0 ? '+' : ''}${fmt(v)}`}
-                positiveGreen
-                className="font-mono text-sm font-semibold"
-              />
-            </div>
-            <div className="min-w-[60px]">
-              <div className="text-[10px] text-gray-500">Margin</div>
-              <div className="font-mono text-xs text-gray-300">{fmt(account.margin)}</div>
-            </div>
-            <div className="min-w-[70px]">
-              <div className="text-[10px] text-gray-500">Free Margin</div>
-              <div className="font-mono text-xs text-gray-300">{fmt(account.freeMargin)}</div>
             </div>
             <div className="min-w-[70px]">
               <div className="text-[10px] text-gray-500">Drawdown</div>
@@ -170,21 +153,29 @@ export const BotCard = ({ account }: Props) => {
               </span>
             </div>
             <div className="min-w-[80px]">
-              <div className="text-[10px] text-gray-500">Lot</div>
-              <div className="flex items-center gap-1 text-xs">
+              <div className="text-[10px] text-gray-500">Orders</div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-mono text-gray-300">{orderCount} open</span>
+                <span className="text-gray-600">|</span>
+                <span className="text-[10px] text-gray-500">Lot</span>
                 <span className="text-success font-mono">B:{formatLots(account.buyLots)}</span>
                 <span className="text-gray-600">/</span>
                 <span className="text-danger font-mono">S:{formatLots(account.sellLots)}</span>
               </div>
             </div>
-            <div className="min-w-[50px]">
-              <div className="text-[10px] text-gray-500">Orders</div>
-              <div className="font-mono text-xs text-gray-300">{orderCount} open</div>
-            </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* P/L — prominent, right side */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="text-right">
+              <div className="text-[10px] text-gray-500">P/L</div>
+              <FlashNumber
+                value={account.profit}
+                format={(v) => `${v >= 0 ? '+' : ''}${fmt(v)}`}
+                positiveGreen
+                className="font-mono text-lg font-bold"
+              />
+            </div>
             <button
               onClick={() => setShowProtection(true)}
               className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors ${
@@ -197,24 +188,24 @@ export const BotCard = ({ account }: Props) => {
               <Shield size={12} />
               {account.protectionEnabled && <span className="text-[10px]">ON</span>}
             </button>
-            <button
-              onClick={() => isOnline && setShowCloseAll(true)}
-              disabled={!isOnline}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border ${
-                isOnline
-                  ? 'border-danger/50 text-danger hover:bg-danger hover:text-white hover:border-danger cursor-pointer'
-                  : 'border-gray-700 text-gray-600 cursor-not-allowed'
-              }`}
-            >
-              <XCircle size={12} />
-              CLOSE ALL
-            </button>
           </div>
         </div>
 
-        {/* Row 2: Server info */}
-        <div className="mt-2 pt-2 border-t border-gray-800/50 text-[10px] text-gray-600">
-          {account.server} • {account.currency} • 1:{account.leverage}
+        {/* Row 2: Close All button (replaces old broker/server/leverage line) */}
+        <div className="mt-2 pt-2 border-t border-gray-800/50 flex items-center justify-between">
+          <span className="text-[10px] text-gray-600">{account.currency}</span>
+          <button
+            onClick={() => isOnline && setShowCloseAll(true)}
+            disabled={!isOnline}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 border ${
+              isOnline
+                ? 'border-danger/50 text-danger hover:bg-danger hover:text-white hover:border-danger cursor-pointer'
+                : 'border-gray-700 text-gray-600 cursor-not-allowed'
+            }`}
+          >
+            <XCircle size={12} />
+            CLOSE ALL
+          </button>
         </div>
       </div>
 
