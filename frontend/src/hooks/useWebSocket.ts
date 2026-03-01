@@ -18,7 +18,9 @@ export const useWebSocket = (token: string | null) => {
       wsRef.current = null;
     }
 
-    const wsUrl = `ws://localhost:4000/ws?token=${encodeURIComponent(token)}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws?token=${encodeURIComponent(token)}`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 

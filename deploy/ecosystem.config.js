@@ -3,8 +3,8 @@ module.exports = {
   apps: [
     {
       name: 'sentinel-api',
-      script: './backend/dist/index.js',
-      cwd: '/opt/sentinel',
+      script: './dist/index.js',
+      cwd: '/opt/sentinel/backend',
       instances: 1,
       autorestart: true,
       watch: false,

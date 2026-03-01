@@ -44,6 +44,25 @@ fi
 
 cd $PROJECT_DIR
 
+# --- Setup .env FIRST (needed for Prisma) ---
+if [ ! -f backend/.env ]; then
+  echo "  Creating backend/.env..."
+  JWT=$(openssl rand -hex 32)
+  ENCRYPT_KEY=$(openssl rand -hex 32)
+  SERVER_IP=$(hostname -I | awk '{print $1}')
+  cat > backend/.env << EOF
+PORT=4000
+NODE_ENV=production
+JWT_SECRET=$JWT
+ENCRYPTION_KEY=$ENCRYPT_KEY
+CORS_ORIGIN=http://$SERVER_IP
+DATABASE_URL="file:./sentinel.db"
+EOF
+  echo "  Generated JWT_SECRET & ENCRYPTION_KEY automatically"
+else
+  echo "  backend/.env already exists, skipping"
+fi
+
 # --- Backend ---
 echo "  Building backend..."
 cd backend
@@ -61,22 +80,6 @@ cd frontend
 npm install
 npm run build
 cd ..
-
-# --- 6. Setup .env (if not exists) ---
-if [ ! -f backend/.env ]; then
-  echo "[6/7] Creating .env..."
-  JWT=$(openssl rand -hex 32)
-  cat > backend/.env << EOF
-PORT=4000
-NODE_ENV=production
-JWT_SECRET=$JWT
-CORS_ORIGIN=http://$(hostname -I | awk '{print $1}')
-DATABASE_URL="file:./sentinel.db"
-EOF
-  echo "  Generated JWT_SECRET automatically"
-else
-  echo "[6/7] .env already exists, skipping"
-fi
 
 # --- 7. Start with PM2 ---
 echo "[7/7] Starting PM2..."
