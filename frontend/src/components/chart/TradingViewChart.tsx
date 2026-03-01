@@ -1,17 +1,15 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export const TradingViewChart = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
 
-  const buildWidget = useCallback(() => {
+  useEffect(() => {
+    if (collapsed) return;
+
     const container = containerRef.current;
     if (!container) return;
-
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    if (w === 0 || h === 0) return;
 
     // Clear previous widget
     container.innerHTML = '';
@@ -27,8 +25,7 @@ export const TradingViewChart = () => {
     script.type = 'text/javascript';
     script.async = true;
     script.innerHTML = JSON.stringify({
-      width: w,
-      height: h,
+      autosize: true,
       symbol: 'OANDA:XAUUSD',
       interval: '15',
       timezone: 'Asia/Bangkok',
@@ -48,21 +45,11 @@ export const TradingViewChart = () => {
     });
 
     container.appendChild(script);
-  }, []);
-
-  useEffect(() => {
-    if (collapsed) return;
-
-    // Wait one frame for container layout to compute its pixel size
-    const raf = requestAnimationFrame(() => {
-      buildWidget();
-    });
 
     return () => {
-      cancelAnimationFrame(raf);
-      if (containerRef.current) containerRef.current.innerHTML = '';
+      container.innerHTML = '';
     };
-  }, [collapsed, buildWidget]);
+  }, [collapsed]);
 
   return (
     <div className="card p-0 overflow-hidden">
@@ -83,11 +70,13 @@ export const TradingViewChart = () => {
         </div>
       </div>
       {!collapsed && (
-        <div
-          ref={containerRef}
-          className="tradingview-widget-container"
-          style={{ height: 'calc(80vh)', minHeight: '600px' }}
-        />
+        <div style={{ height: '80vh', minHeight: '600px' }}>
+          <div
+            ref={containerRef}
+            className="tradingview-widget-container"
+            style={{ height: '100%', width: '100%' }}
+          />
+        </div>
       )}
     </div>
   );

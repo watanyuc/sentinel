@@ -147,10 +147,7 @@
 }
 
 /* TradingView widget — force iframe to fill container */
-.tradingview-widget-container,
-.tradingview-widget-container__widget,
-.tradingview-widget-container__widget div,
-.tradingview-widget-container__widget iframe {
+.tradingview-widget-container iframe {
   height: 100% !important;
   width: 100% !important;
 }
