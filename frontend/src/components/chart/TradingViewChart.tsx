@@ -23,7 +23,8 @@ export const TradingViewChart = () => {
     script.type = 'text/javascript';
     script.async = true;
     script.innerHTML = JSON.stringify({
-      autosize: true,
+      width: '100%',
+      height: '100%',
       symbol: 'OANDA:XAUUSD',
       interval: '15',
       timezone: 'Asia/Bangkok',
