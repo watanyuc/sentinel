@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export const TradingViewChart = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   useEffect(() => {
     if (collapsed) return;
@@ -70,7 +70,7 @@ export const TradingViewChart = () => {
         </div>
       </div>
       {!collapsed && (
-        <div style={{ height: '80vh', minHeight: '600px' }}>
+        <div style={{ height: '60vh', minHeight: '400px' }}>
           <div
             ref={containerRef}
             className="tradingview-widget-container"

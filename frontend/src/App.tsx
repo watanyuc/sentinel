@@ -43,9 +43,9 @@ const Dashboard = () => {
     <Layout>
       {currentPage === 'dashboard' && (
         <>
+          <TradingViewChart />
           <OverviewTabs />
           <BotList />
-          <TradingViewChart />
         </>
       )}
       {currentPage === 'analytics' && <AnalyticsPage />}
