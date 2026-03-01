@@ -1,11 +1,13 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export const TradingViewChart = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const scriptRef = useRef<HTMLScriptElement | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (collapsed || !containerRef.current) return;
 
     // Clear previous content
     containerRef.current.innerHTML = '';
@@ -44,22 +46,33 @@ export const TradingViewChart = () => {
     return () => {
       if (containerRef.current) containerRef.current.innerHTML = '';
     };
-  }, []);
+  }, [collapsed]);
 
   return (
     <div className="card p-0 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+      <div
+        className="px-4 py-3 border-b border-gray-800 flex items-center justify-between cursor-pointer select-none hover:bg-gray-800/30 transition-colors"
+        onClick={() => setCollapsed(c => !c)}
+      >
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-white">XAUUSD</span>
           <span className="text-xs text-gray-400">Gold / US Dollar</span>
         </div>
-        <span className="text-xs text-gray-500">15m • OANDA</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">15m • OANDA</span>
+          {collapsed
+            ? <ChevronDown size={16} className="text-gray-400" />
+            : <ChevronUp size={16} className="text-gray-400" />
+          }
+        </div>
       </div>
-      <div
-        ref={containerRef}
-        className="tradingview-widget-container"
-        style={{ height: '800px' }}
-      />
+      {!collapsed && (
+        <div
+          ref={containerRef}
+          className="tradingview-widget-container"
+          style={{ height: '800px' }}
+        />
+      )}
     </div>
   );
 };

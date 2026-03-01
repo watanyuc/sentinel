@@ -7,6 +7,7 @@ import { updateProfile, changePassword, getTelegramSettings, saveTelegramSetting
 import { exportToCSV } from '../../utils/export';
 import { useTranslation } from '../../i18n/useTranslation';
 import { ReportSettings } from './ReportSettings';
+import { AccountsSection } from '../accounts/AccountsSection';
 import type { NotificationLogEntry } from '../../types';
 
 export const ProfileSettings = () => {
@@ -119,7 +120,7 @@ export const ProfileSettings = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       <button
         onClick={() => setCurrentPage('dashboard')}
         className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
@@ -221,6 +222,9 @@ export const ProfileSettings = () => {
           Change Password
         </button>
       </div>
+
+      {/* API Key Management */}
+      <AccountsSection />
 
       {/* Telegram Alerts */}
       <div className="bg-bg-secondary border border-gray-800 rounded-xl p-6 space-y-4">

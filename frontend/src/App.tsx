@@ -6,7 +6,7 @@ import { getProfile } from './services/api';
 import { LoginPage } from './components/auth/LoginPage';
 import { Layout } from './components/layout/Layout';
 import { TradingViewChart } from './components/chart/TradingViewChart';
-import { AccountsSection } from './components/accounts/AccountsSection';
+
 import { OverviewTabs } from './components/overview/OverviewTabs';
 import { BotList } from './components/bots/BotList';
 import { ProfileSettings } from './components/settings/ProfileSettings';
@@ -43,10 +43,9 @@ const Dashboard = () => {
     <Layout>
       {currentPage === 'dashboard' && (
         <>
-          <TradingViewChart />
-          <AccountsSection />
           <OverviewTabs />
           <BotList />
+          <TradingViewChart />
         </>
       )}
       {currentPage === 'analytics' && <AnalyticsPage />}
