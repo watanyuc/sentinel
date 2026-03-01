@@ -5,14 +5,21 @@ import { runtimeStore } from '../services/runtimeStore';
 const router = Router();
 router.use(authMiddleware);
 
+// Convert cents-based currencies to USD for aggregation
+const toUsd = (value: number, currency: string): number => {
+  const cur = currency.toUpperCase();
+  if (cur === 'USC' || cur === 'UST') return value / 100;
+  return value;
+};
+
 router.get('/overview', (req: AuthRequest, res: Response) => {
   const accounts = runtimeStore.getAccountsByUser(req.user!.id);
   const online = accounts.filter(a => a.status === 'online');
   const offline = accounts.filter(a => a.status === 'offline');
 
-  const totalBalance = accounts.reduce((s, a) => s + a.balance, 0);
-  const totalEquity = accounts.reduce((s, a) => s + a.equity, 0);
-  const totalProfit = accounts.reduce((s, a) => s + a.profit, 0);
+  const totalBalance = accounts.reduce((s, a) => s + toUsd(a.balance, a.currency), 0);
+  const totalEquity = accounts.reduce((s, a) => s + toUsd(a.equity, a.currency), 0);
+  const totalProfit = accounts.reduce((s, a) => s + toUsd(a.profit, a.currency), 0);
   const totalOpenLots = accounts.reduce((s, a) => s + a.openLots, 0);
   const totalBuyLots = accounts.reduce((s, a) => s + a.buyLots, 0);
   const totalSellLots = accounts.reduce((s, a) => s + a.sellLots, 0);
