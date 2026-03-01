@@ -1,30 +1,34 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export const TradingViewChart = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const scriptRef = useRef<HTMLScriptElement | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => {
-    if (collapsed || !containerRef.current) return;
+  const buildWidget = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-    // Clear previous content
-    containerRef.current.innerHTML = '';
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    if (w === 0 || h === 0) return;
+
+    // Clear previous widget
+    container.innerHTML = '';
 
     const widgetDiv = document.createElement('div');
     widgetDiv.className = 'tradingview-widget-container__widget';
     widgetDiv.style.height = '100%';
     widgetDiv.style.width = '100%';
-    containerRef.current.appendChild(widgetDiv);
+    container.appendChild(widgetDiv);
 
     const script = document.createElement('script');
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
     script.type = 'text/javascript';
     script.async = true;
     script.innerHTML = JSON.stringify({
-      width: '100%',
-      height: '100%',
+      width: w,
+      height: h,
       symbol: 'OANDA:XAUUSD',
       interval: '15',
       timezone: 'Asia/Bangkok',
@@ -43,13 +47,22 @@ export const TradingViewChart = () => {
       support_host: 'https://www.tradingview.com',
     });
 
-    containerRef.current.appendChild(script);
-    scriptRef.current = script;
+    container.appendChild(script);
+  }, []);
+
+  useEffect(() => {
+    if (collapsed) return;
+
+    // Wait one frame for container layout to compute its pixel size
+    const raf = requestAnimationFrame(() => {
+      buildWidget();
+    });
 
     return () => {
+      cancelAnimationFrame(raf);
       if (containerRef.current) containerRef.current.innerHTML = '';
     };
-  }, [collapsed]);
+  }, [collapsed, buildWidget]);
 
   return (
     <div className="card p-0 overflow-hidden">
