@@ -53,6 +53,8 @@ export const BotCard = ({ account }: Props) => {
 
   const isOnline = account.status === 'online';
   const orderCount = typeof account.orders === 'number' ? account.orders : account.orders.length;
+  const cur = account.currency || 'USD';
+  const fmt = (v: number) => formatCurrency(v, cur);
 
   const onSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['overview'] });
@@ -149,14 +151,14 @@ export const BotCard = ({ account }: Props) => {
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
           <div>
             <div className="text-[10px] text-gray-500 mb-0.5">Balance</div>
-            <div className="font-mono text-sm text-white font-medium">{formatCurrency(account.balance)}</div>
+            <div className="font-mono text-sm text-white font-medium">{fmt(account.balance)}</div>
           </div>
           <div>
             <div className="text-[10px] text-gray-500 mb-0.5">Equity</div>
             <div className="font-mono text-sm font-medium">
               <FlashNumber
                 value={account.equity}
-                format={formatCurrency}
+                format={fmt}
                 positiveGreen={false}
                 className="text-white"
               />
@@ -164,11 +166,11 @@ export const BotCard = ({ account }: Props) => {
           </div>
           <div>
             <div className="text-[10px] text-gray-500 mb-0.5">Margin</div>
-            <div className="font-mono text-xs text-gray-300">{formatCurrency(account.margin)}</div>
+            <div className="font-mono text-xs text-gray-300">{fmt(account.margin)}</div>
           </div>
           <div>
             <div className="text-[10px] text-gray-500 mb-0.5">Free Margin</div>
-            <div className="font-mono text-xs text-gray-300">{formatCurrency(account.freeMargin)}</div>
+            <div className="font-mono text-xs text-gray-300">{fmt(account.freeMargin)}</div>
           </div>
         </div>
 
@@ -219,7 +221,7 @@ export const BotCard = ({ account }: Props) => {
             <div className="text-[10px] text-gray-500 mb-0.5">P/L</div>
             <FlashNumber
               value={account.profit}
-              format={(v) => `${v >= 0 ? '+' : ''}${formatCurrency(v)}`}
+              format={(v) => `${v >= 0 ? '+' : ''}${fmt(v)}`}
               positiveGreen
               className="font-mono text-sm font-semibold"
             />
@@ -234,6 +236,7 @@ export const BotCard = ({ account }: Props) => {
 
         {/* Buy/Sell lots */}
         <div className="flex items-center gap-2 text-xs mb-3">
+          <span className="text-gray-500">Lot</span>
           <span className="text-success font-mono">B: {formatLots(account.buyLots)}</span>
           <span className="text-gray-600">|</span>
           <span className="text-danger font-mono">S: {formatLots(account.sellLots)}</span>

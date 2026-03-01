@@ -5,9 +5,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 
 export const formatCurrency = (value: number, currency = 'USD'): string => {
   const abs = Math.abs(value);
-  const formatted = abs >= 1000
-    ? (abs / 1000).toFixed(2) + 'K'
-    : abs.toFixed(2);
+  const formatted = abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const sign = value < 0 ? '-' : '';
   const symbol = CURRENCY_SYMBOLS[currency] ?? currency + ' ';
   return `${sign}${symbol}${formatted}`;

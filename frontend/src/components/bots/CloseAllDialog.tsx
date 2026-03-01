@@ -12,14 +12,10 @@ interface Props {
 }
 
 export const CloseAllDialog = ({ accountId, accountName, onClose, onSuccess }: Props) => {
-  const [confirmText, setConfirmText] = useState('');
   const [loading, setLoading] = useState(false);
   const { addToast } = useUIStore();
 
-  const canConfirm = confirmText === 'CLOSE';
-
   const handleConfirm = async () => {
-    if (!canConfirm) return;
     setLoading(true);
     try {
       const result = await closeAllOrders(accountId);
@@ -59,28 +55,14 @@ export const CloseAllDialog = ({ accountId, accountName, onClose, onSuccess }: P
           </div>
         </div>
 
-        <div>
-          <label className="text-xs text-gray-400 block mb-2">
-            Type <strong className="text-white font-mono">CLOSE</strong> to confirm:
-          </label>
-          <input
-            type="text"
-            value={confirmText}
-            onChange={e => setConfirmText(e.target.value)}
-            placeholder="Type CLOSE here"
-            className="w-full bg-bg-primary border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-danger font-mono tracking-wider"
-            autoFocus
-          />
-        </div>
-
         <div className="flex gap-3 justify-end">
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
           <button
-            className={`btn-danger ${!canConfirm ? 'opacity-40 cursor-not-allowed' : ''}`}
+            className="btn-danger"
             onClick={handleConfirm}
-            disabled={!canConfirm || loading}
+            disabled={loading}
           >
-            {loading ? 'Sending...' : 'Close All Orders'}
+            {loading ? 'Sending...' : 'Yes, Close All'}
           </button>
         </div>
       </div>
