@@ -33,7 +33,7 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 bg-bg-secondary border-b border-gray-800 backdrop-blur-sm">
-      <div className="max-w-screen-2xl mx-auto px-4 py-3">
+      <div className="px-4 py-3">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           {/* Logo — click to go to dashboard */}
           <button onClick={() => setCurrentPage('dashboard')} className="flex items-center gap-3 hover:opacity-80 transition-opacity">

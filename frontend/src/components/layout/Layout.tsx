@@ -9,7 +9,7 @@ export const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-bg-primary">
       <Header />
-      <main className="max-w-screen-2xl mx-auto px-4 py-6 space-y-6">
+      <main className="px-4 py-6 space-y-6">
         {children}
       </main>
     </div>
