@@ -58,7 +58,7 @@ export const TradingViewChart = () => {
       <div
         ref={containerRef}
         className="tradingview-widget-container"
-        style={{ height: '460px' }}
+        style={{ height: '600px' }}
       />
     </div>
   );
