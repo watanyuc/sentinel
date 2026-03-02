@@ -54,6 +54,11 @@ export const BotCard = ({ account }: Props) => {
   const orderCount = typeof account.orders === 'number' ? account.orders : account.orders.length;
   const cur = account.currency || 'USD';
   const fmt = (v: number) => formatCurrency(v, cur);
+  // Number-only formatter (no currency prefix) for aligned columns
+  const fmtNum = (v: number) => {
+    const abs = Math.abs(v);
+    return abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   const onSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['overview'] });
@@ -131,13 +136,13 @@ export const BotCard = ({ account }: Props) => {
           {/* Financial Data — inline (no Margin / Free Margin) */}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 flex-1">
             <div className="min-w-[90px]">
-              <div className="text-[10px] text-gray-500">Balance</div>
-              <div className="font-mono text-sm text-white font-medium">{fmt(account.balance)}</div>
+              <div className="text-[10px] text-gray-500">Balance <span className="text-gray-600">({cur})</span></div>
+              <div className="font-mono text-sm text-white font-medium">{fmtNum(account.balance)}</div>
             </div>
             <div className="min-w-[90px]">
               <div className="text-[10px] text-gray-500">Equity</div>
               <div className="font-mono text-sm font-medium">
-                <FlashNumber value={account.equity} format={fmt} positiveGreen={false} className="text-white" />
+                <FlashNumber value={account.equity} format={fmtNum} positiveGreen={false} className="text-white" />
               </div>
             </div>
             <div className="min-w-[70px]">
@@ -171,7 +176,7 @@ export const BotCard = ({ account }: Props) => {
               <div className="text-[10px] text-gray-500">P/L</div>
               <FlashNumber
                 value={account.profit}
-                format={(v) => `${v >= 0 ? '+' : ''}${fmt(v)}`}
+                format={(v) => `${v >= 0 ? '+' : '-'}${fmtNum(v)}`}
                 positiveGreen
                 className="font-mono text-lg font-bold"
               />
