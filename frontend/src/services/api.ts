@@ -76,6 +76,11 @@ export const fetchOverview = async () => {
   return res.data;
 };
 
+export const fetchTodayPnl = async (): Promise<Record<string, number>> => {
+  const res = await api.get('/dashboard/today-pnl');
+  return res.data;
+};
+
 export const fetchHeatmapAccounts = async () => {
   const res = await api.get('/dashboard/heatmap/accounts');
   return res.data;

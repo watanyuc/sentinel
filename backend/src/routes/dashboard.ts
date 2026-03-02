@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { runtimeStore } from '../services/runtimeStore';
+import prisma from '../lib/prisma';
 
 const router = Router();
 router.use(authMiddleware);
@@ -51,6 +52,7 @@ router.get('/heatmap/accounts', (req: AuthRequest, res: Response) => {
     drawdown: a.drawdown,
     marginLevel: a.marginLevel,
     profit: a.profit,
+    currency: a.currency,
   }));
   res.json(data);
 });
@@ -89,6 +91,32 @@ router.get('/heatmap/pending', (req: AuthRequest, res: Response) => {
     });
   });
   res.json(pending);
+});
+
+// Today's closed P/L per account
+router.get('/today-pnl', async (req: AuthRequest, res: Response) => {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const trades = await prisma.closedTrade.findMany({
+    where: {
+      closeTime: { gte: startOfDay },
+      account: { userId: req.user!.id },
+    },
+    select: { accountId: true, profit: true },
+  });
+
+  const pnlMap: Record<string, number> = {};
+  for (const t of trades) {
+    pnlMap[t.accountId] = (pnlMap[t.accountId] || 0) + t.profit;
+  }
+
+  // Round values
+  for (const id of Object.keys(pnlMap)) {
+    pnlMap[id] = parseFloat(pnlMap[id].toFixed(2));
+  }
+
+  res.json(pnlMap);
 });
 
 export default router;

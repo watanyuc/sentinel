@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Account, AccountGroup } from '../../types';
-import { formatCurrency, formatLots, formatPercent, getDrawdownColor, getMarginLevelColor } from '../../utils/formatters';
+import { formatCurrency, formatLots, formatPercent, getDrawdownColor } from '../../utils/formatters';
 import { FlashNumber } from '../ui/FlashNumber';
 import { CloseAllDialog } from './CloseAllDialog';
 import { ProtectionSettings } from '../settings/ProtectionSettings';
@@ -11,9 +11,10 @@ import { fetchGroups, assignAccountGroup } from '../../services/api';
 
 interface Props {
   account: Account;
+  todayPnl?: number;
 }
 
-export const BotCard = ({ account }: Props) => {
+export const BotCard = ({ account, todayPnl = 0 }: Props) => {
   const [showCloseAll, setShowCloseAll] = useState(false);
   const [showProtection, setShowProtection] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
@@ -154,12 +155,6 @@ export const BotCard = ({ account }: Props) => {
               </span>
             </div>
             <div className="min-w-[80px]">
-              <div className="text-[10px] text-gray-500">Margin Level</div>
-              <span className={`font-mono text-sm font-medium ${getMarginLevelColor(account.marginLevel)}`}>
-                <FlashNumber value={account.marginLevel} format={(v) => `${v.toFixed(1)}%`} />
-              </span>
-            </div>
-            <div className="min-w-[80px]">
               <div className="text-[10px] text-gray-500">Orders</div>
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-mono text-gray-300">{orderCount} open</span>
@@ -172,8 +167,14 @@ export const BotCard = ({ account }: Props) => {
             </div>
           </div>
 
-          {/* P/L — prominent, right side */}
+          {/* Today + P/L — prominent, right side */}
           <div className="flex items-center gap-3 shrink-0">
+            <div className="text-right">
+              <div className="text-[10px] text-gray-500">Today</div>
+              <div className={`font-mono text-sm font-semibold ${todayPnl > 0 ? 'text-success' : todayPnl < 0 ? 'text-danger' : 'text-gray-400'}`}>
+                {todayPnl >= 0 ? '+' : '-'}{fmtNum(todayPnl)}
+              </div>
+            </div>
             <div className="text-right">
               <div className="text-[10px] text-gray-500">P/L</div>
               <FlashNumber

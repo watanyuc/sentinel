@@ -58,11 +58,11 @@ export const AccountHeatmap = () => {
               <div className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-400">Balance</span>
-                  <span className="font-mono text-white">{formatCurrency(acc.balance)}</span>
+                  <span className="font-mono text-white">{formatCurrency(acc.balance, acc.currency)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-400">Equity</span>
-                  <span className="font-mono" style={{ color: text }}>{formatCurrency(acc.equity)}</span>
+                  <span className="font-mono" style={{ color: text }}>{formatCurrency(acc.equity, acc.currency)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-400">Drawdown</span>
@@ -71,7 +71,7 @@ export const AccountHeatmap = () => {
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-400">P/L</span>
                   <span className={`font-mono ${acc.profit >= 0 ? 'text-success' : 'text-danger'}`}>
-                    {formatCurrency(acc.profit)}
+                    {formatCurrency(acc.profit, acc.currency)}
                   </span>
                 </div>
               </div>

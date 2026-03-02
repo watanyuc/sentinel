@@ -1,8 +1,9 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Search, SlidersHorizontal, Folder, Settings2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useAccountStore } from '../../stores/accountStore';
 import { useUIStore } from '../../stores/uiStore';
-import { fetchGroups } from '../../services/api';
+import { fetchGroups, fetchTodayPnl } from '../../services/api';
 import type { Account, AccountGroup } from '../../types';
 import { BotCard } from './BotCard';
 import { GroupManager } from '../groups/GroupManager';
@@ -20,6 +21,12 @@ export const BotList = () => {
   const { botFilter, setBotFilter } = useUIStore();
   const [groups, setGroups] = useState<AccountGroup[]>([]);
   const [showGroupManager, setShowGroupManager] = useState(false);
+
+  const { data: todayPnlData } = useQuery({
+    queryKey: ['today-pnl'],
+    queryFn: fetchTodayPnl,
+    refetchInterval: 10_000,
+  });
 
   const loadGroups = useCallback(() => {
     fetchGroups().then(setGroups).catch(() => {});
@@ -169,7 +176,7 @@ export const BotList = () => {
       ) : (
         <div className="flex flex-col gap-3">
           {filtered.map(account => (
-            <BotCard key={account.id} account={account} />
+            <BotCard key={account.id} account={account} todayPnl={todayPnlData?.[account.id] ?? 0} />
           ))}
         </div>
       )}

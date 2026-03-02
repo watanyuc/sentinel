@@ -87,6 +87,7 @@ export interface HeatmapAccount {
   drawdown: number;
   marginLevel: number;
   profit: number;
+  currency: string;
 }
 
 export interface HeatmapOrder {
