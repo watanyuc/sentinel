@@ -52,8 +52,10 @@ export const BotCard = ({ account }: Props) => {
 
   const isOnline = account.status === 'online';
   const orderCount = typeof account.orders === 'number' ? account.orders : account.orders.length;
-  const cur = account.currency || 'USD';
-  const fmt = (v: number) => formatCurrency(v, cur);
+  const rawCur = account.currency || 'USD';
+  // Display USDC as "USC" for readability
+  const cur = rawCur.toUpperCase() === 'USDC' ? 'USC' : rawCur;
+  const fmt = (v: number) => formatCurrency(v, rawCur);
   // Number-only formatter (no currency prefix) for aligned columns
   const fmtNum = (v: number) => {
     const abs = Math.abs(v);
@@ -136,7 +138,7 @@ export const BotCard = ({ account }: Props) => {
           {/* Financial Data — inline (no Margin / Free Margin) */}
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 flex-1">
             <div className="min-w-[90px]">
-              <div className="text-[10px] text-gray-500">Balance <span className="text-gray-600">({cur})</span></div>
+              <div className="text-[10px] text-gray-500">Balance <span className="text-accent-blue font-medium">{cur}</span></div>
               <div className="font-mono text-sm text-white font-medium">{fmtNum(account.balance)}</div>
             </div>
             <div className="min-w-[90px]">
@@ -193,24 +195,19 @@ export const BotCard = ({ account }: Props) => {
               <Shield size={12} />
               {account.protectionEnabled && <span className="text-[10px]">ON</span>}
             </button>
+            <button
+              onClick={() => isOnline && setShowCloseAll(true)}
+              disabled={!isOnline}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border ${
+                isOnline
+                  ? 'border-danger/50 text-danger hover:bg-danger hover:text-white hover:border-danger cursor-pointer'
+                  : 'border-gray-700 text-gray-600 cursor-not-allowed'
+              }`}
+            >
+              <XCircle size={12} />
+              CLOSE ALL
+            </button>
           </div>
-        </div>
-
-        {/* Row 2: Close All button (replaces old broker/server/leverage line) */}
-        <div className="mt-2 pt-2 border-t border-gray-800/50 flex items-center justify-between">
-          <span className="text-[10px] text-gray-600">{account.currency}</span>
-          <button
-            onClick={() => isOnline && setShowCloseAll(true)}
-            disabled={!isOnline}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 border ${
-              isOnline
-                ? 'border-danger/50 text-danger hover:bg-danger hover:text-white hover:border-danger cursor-pointer'
-                : 'border-gray-700 text-gray-600 cursor-not-allowed'
-            }`}
-          >
-            <XCircle size={12} />
-            CLOSE ALL
-          </button>
         </div>
       </div>
 
