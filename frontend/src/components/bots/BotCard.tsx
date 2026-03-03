@@ -131,7 +131,7 @@ export const BotCard = ({ account, todayPnl = 0 }: Props) => {
                   )}
                 </div>
                 <span className="text-gray-600">•</span>
-                <span className="truncate">{account.broker} • #{account.accountNumber}</span>
+                <span>#{account.accountNumber}</span>
               </div>
             </div>
           </div>
@@ -210,6 +210,9 @@ export const BotCard = ({ account, todayPnl = 0 }: Props) => {
             </button>
           </div>
         </div>
+
+        {/* Broker — bottom left */}
+        <div className="mt-1.5 text-[10px] text-gray-600 truncate">{account.broker}</div>
       </div>
 
       {showCloseAll && (
