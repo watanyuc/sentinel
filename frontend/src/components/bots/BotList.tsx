@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
-import { Search, SlidersHorizontal, Folder, Settings2 } from 'lucide-react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { Search, SlidersHorizontal, Settings2, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAccountStore } from '../../stores/accountStore';
 import { useUIStore } from '../../stores/uiStore';
@@ -21,6 +21,8 @@ export const BotList = () => {
   const { botFilter, setBotFilter } = useUIStore();
   const [groups, setGroups] = useState<AccountGroup[]>([]);
   const [showGroupManager, setShowGroupManager] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
 
   const { data: todayPnlData } = useQuery({
     queryKey: ['today-pnl'],
@@ -36,10 +38,33 @@ export const BotList = () => {
     loadGroups();
   }, [loadGroups]);
 
+  // Close filter popup on outside click
+  useEffect(() => {
+    if (!showFilter) return;
+    const handler = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setShowFilter(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showFilter]);
+
   const brokers = useMemo(() => {
     const b = new Set(accounts.map(a => a.broker));
     return ['all', ...Array.from(b)];
   }, [accounts]);
+
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (botFilter.status !== 'all') count++;
+    if (botFilter.broker !== 'all') count++;
+    if (botFilter.group !== 'all') count++;
+    if (botFilter.sort !== 'name') count++;
+    if (botFilter.search.trim()) count++;
+    return count;
+  }, [botFilter]);
 
   const filtered = useMemo(() => {
     let result = [...accounts];
@@ -80,86 +105,156 @@ export const BotList = () => {
     return result;
   }, [accounts, botFilter]);
 
+  const clearFilters = () => {
+    setBotFilter({ status: 'all', broker: 'all', search: '', sort: 'name', group: 'all' });
+  };
+
+  const selectClass = "w-full bg-bg-primary border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-accent-blue";
+
   return (
     <div>
-      {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      {/* Compact header bar */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal size={14} className="text-gray-500" />
           <span className="text-sm font-medium text-gray-300">Bot Accounts</span>
           <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
             {filtered.length}/{accounts.length}
           </span>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search bots..."
-            value={botFilter.search}
-            onChange={e => setBotFilter({ search: e.target.value })}
-            className="pl-8 pr-3 py-1.5 bg-bg-secondary border border-gray-700 rounded-lg text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-accent-blue w-44"
-          />
-        </div>
-
-        {/* Status filter */}
-        <select
-          value={botFilter.status}
-          onChange={e => setBotFilter({ status: e.target.value })}
-          className="bg-bg-secondary border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-accent-blue"
-        >
-          <option value="all">All Status</option>
-          <option value="online">Online</option>
-          <option value="offline">Offline</option>
-        </select>
-
-        {/* Broker filter */}
-        <select
-          value={botFilter.broker}
-          onChange={e => setBotFilter({ broker: e.target.value })}
-          className="bg-bg-secondary border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-accent-blue"
-        >
-          {brokers.map(b => (
-            <option key={b} value={b}>{b === 'all' ? 'All Brokers' : b}</option>
-          ))}
-        </select>
-
-        {/* Group filter */}
-        {groups.length > 0 && (
-          <select
-            value={botFilter.group}
-            onChange={e => setBotFilter({ group: e.target.value })}
-            className="bg-bg-secondary border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-accent-blue"
+        <div className="flex items-center gap-2 relative" ref={filterRef}>
+          {/* Filter button */}
+          <button
+            onClick={() => setShowFilter(f => !f)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              showFilter || activeFilterCount > 0
+                ? 'border-accent-blue text-accent-blue bg-accent-blue/10'
+                : 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-300'
+            }`}
           >
-            <option value="all">All Groups</option>
-            <option value="ungrouped">Ungrouped</option>
-            {groups.map(g => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
-        )}
+            <SlidersHorizontal size={13} />
+            <span>Filter</span>
+            {activeFilterCount > 0 && (
+              <span className="bg-accent-blue text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
 
-        {/* Sort */}
-        <select
-          value={botFilter.sort}
-          onChange={e => setBotFilter({ sort: e.target.value })}
-          className="bg-bg-secondary border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-accent-blue"
-        >
-          {SORT_OPTIONS.map(o => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+          {/* Groups button */}
+          <button
+            onClick={() => setShowGroupManager(true)}
+            className="flex items-center gap-1.5 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-400 hover:border-gray-500 hover:text-gray-300 transition-colors"
+          >
+            <Settings2 size={13} />
+            <span>Groups</span>
+          </button>
 
-        {/* Manage Groups */}
-        <button
-          onClick={() => setShowGroupManager(true)}
-          className="flex items-center gap-1.5 bg-bg-secondary border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-300 hover:border-accent-blue transition-colors"
-        >
-          <Settings2 size={13} />
-          <span>Groups</span>
-        </button>
+          {/* Filter popup */}
+          {showFilter && (
+            <div className="absolute right-0 top-full mt-2 w-80 bg-bg-secondary border border-gray-700 rounded-xl shadow-2xl z-50 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-white">Filter & Sort</h4>
+                <button onClick={() => setShowFilter(false)} className="text-gray-500 hover:text-gray-300">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {/* Search */}
+                <div>
+                  <label className="text-[11px] text-gray-500 block mb-1">Search</label>
+                  <div className="relative">
+                    <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="Bot name, broker, account #..."
+                      value={botFilter.search}
+                      onChange={e => setBotFilter({ search: e.target.value })}
+                      className="w-full pl-8 pr-3 py-2 bg-bg-primary border border-gray-700 rounded-lg text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-accent-blue"
+                    />
+                  </div>
+                </div>
+
+                {/* Status + Broker row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] text-gray-500 block mb-1">Status</label>
+                    <select
+                      value={botFilter.status}
+                      onChange={e => setBotFilter({ status: e.target.value })}
+                      className={selectClass}
+                    >
+                      <option value="all">All</option>
+                      <option value="online">Online</option>
+                      <option value="offline">Offline</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-gray-500 block mb-1">Broker</label>
+                    <select
+                      value={botFilter.broker}
+                      onChange={e => setBotFilter({ broker: e.target.value })}
+                      className={selectClass}
+                    >
+                      {brokers.map(b => (
+                        <option key={b} value={b}>{b === 'all' ? 'All' : b}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Group + Sort row */}
+                <div className="grid grid-cols-2 gap-3">
+                  {groups.length > 0 && (
+                    <div>
+                      <label className="text-[11px] text-gray-500 block mb-1">Group</label>
+                      <select
+                        value={botFilter.group}
+                        onChange={e => setBotFilter({ group: e.target.value })}
+                        className={selectClass}
+                      >
+                        <option value="all">All</option>
+                        <option value="ungrouped">Ungrouped</option>
+                        {groups.map(g => (
+                          <option key={g.id} value={g.id}>{g.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-[11px] text-gray-500 block mb-1">Sort by</label>
+                    <select
+                      value={botFilter.sort}
+                      onChange={e => setBotFilter({ sort: e.target.value })}
+                      className={selectClass}
+                    >
+                      {SORT_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={clearFilters}
+                    className="flex-1 py-2 rounded-lg text-xs text-gray-400 border border-gray-700 hover:border-gray-500 hover:text-gray-300 transition-colors"
+                  >
+                    Clear all
+                  </button>
+                  <button
+                    onClick={() => setShowFilter(false)}
+                    className="flex-1 py-2 rounded-lg text-xs font-semibold text-white bg-accent-blue hover:bg-blue-600 transition-colors"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Cards grid */}
@@ -168,7 +263,7 @@ export const BotList = () => {
           <p className="text-sm">No bots match your filters</p>
           <button
             className="text-xs text-accent-blue hover:underline mt-2"
-            onClick={() => setBotFilter({ status: 'all', broker: 'all', search: '', sort: 'name', group: 'all' })}
+            onClick={clearFilters}
           >
             Clear filters
           </button>

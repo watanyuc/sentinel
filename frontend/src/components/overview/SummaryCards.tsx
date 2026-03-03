@@ -35,27 +35,24 @@ interface Props {
 
 export const SummaryCards = ({ stats }: Props) => {
   const equityChange = ((stats.totalEquity - stats.totalBalance) / Math.max(stats.totalBalance, 1)) * 100;
+  const allOnline = stats.onlineAccounts === stats.totalAccounts;
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3">
-      <StatCard
-        label="Total Accounts"
-        value={stats.totalAccounts}
-        icon={<Users size={16} />}
-        sub={`${stats.onlineAccounts} online`}
-      />
-      <StatCard
-        label="Online"
-        value={stats.onlineAccounts}
-        icon={<Wifi size={16} className="text-success" />}
-        valueColor="text-success"
-      />
-      <StatCard
-        label="Offline"
-        value={stats.offlineAccounts}
-        icon={<WifiOff size={16} className="text-gray-500" />}
-        valueColor="text-gray-400"
-      />
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+      {/* Compact: Online / Total */}
+      <div className="card flex flex-col gap-2 min-w-0">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-400 font-medium">Accounts</span>
+          <div className="shrink-0">{allOnline ? <Wifi size={16} className="text-success" /> : <Users size={16} className="text-gray-600" />}</div>
+        </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className={`text-xl font-bold font-mono ${allOnline ? 'text-success' : 'text-warning'}`}>{stats.onlineAccounts}</span>
+          <span className="text-sm text-gray-500 font-mono">/ {stats.totalAccounts}</span>
+        </div>
+        <span className="text-xs text-gray-500">
+          {allOnline ? 'All online' : `${stats.offlineAccounts} offline`}
+        </span>
+      </div>
       <StatCard
         label="Total Balance"
         value={formatCurrency(stats.totalBalance)}
