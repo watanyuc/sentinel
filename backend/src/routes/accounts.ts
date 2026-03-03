@@ -108,6 +108,20 @@ router.post('/:id/close-all', (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/accounts/:id/apikey — reveal full API key (for copy)
+router.get('/:id/apikey', async (req: AuthRequest, res: Response) => {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const dbAccount = await prisma.account.findFirst({
+    where: { id, userId: req.user!.id },
+    select: { apiKey: true },
+  });
+  if (!dbAccount) {
+    res.status(404).json({ error: 'Account not found' });
+    return;
+  }
+  res.json({ apiKey: dbAccount.apiKey });
+});
+
 // GET /api/accounts/:id/alerts — fetch alert thresholds
 router.get('/:id/alerts', async (req: AuthRequest, res: Response) => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

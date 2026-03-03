@@ -4,8 +4,8 @@ import { login } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 
 export const LoginPage = () => {
-  const [email, setEmail] = useState('admin@sentinel.com');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { setAuth } = useAuthStore();
@@ -36,14 +36,16 @@ export const LoginPage = () => {
           <p className="text-sm text-gray-400 mt-1">MT5 Trading Dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="card space-y-4">
+        <form onSubmit={handleSubmit} className="card space-y-4" autoComplete="off">
           <div>
             <label className="text-xs text-gray-400 block mb-1.5">Email</label>
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full bg-bg-primary border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent-blue transition-colors"
+              autoComplete="off"
+              placeholder="admin@sentinel.com"
+              className="w-full bg-bg-primary border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue transition-colors"
               required
             />
           </div>
@@ -53,7 +55,9 @@ export const LoginPage = () => {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full bg-bg-primary border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-accent-blue transition-colors"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              className="w-full bg-bg-primary border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-accent-blue transition-colors"
               required
             />
           </div>
@@ -69,7 +73,7 @@ export const LoginPage = () => {
           </button>
 
           <p className="text-center text-xs text-gray-600">
-            Mock credentials pre-filled above
+            Demo: admin@sentinel.com / password
           </p>
         </form>
       </div>

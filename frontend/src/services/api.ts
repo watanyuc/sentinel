@@ -65,6 +65,11 @@ export const deleteAccount = async (id: string) => {
   return res.data;
 };
 
+export const revealApiKey = async (id: string): Promise<string> => {
+  const res = await api.get(`/accounts/${id}/apikey`);
+  return res.data.apiKey;
+};
+
 export const closeAllOrders = async (id: string) => {
   const res = await api.post(`/accounts/${id}/close-all`);
   return res.data;

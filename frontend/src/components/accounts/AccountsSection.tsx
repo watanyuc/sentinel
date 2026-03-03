@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { Plus, Copy, Trash2, Key, ChevronDown, ChevronUp, RefreshCw, CheckCircle, AlertTriangle, Bell, X } from 'lucide-react';
-import { fetchAccounts, deleteAccount, createAccount, getAccountAlerts, saveAccountAlerts } from '../../services/api';
+import { Plus, Copy, Trash2, Key, ChevronDown, ChevronUp, RefreshCw, CheckCircle, AlertTriangle, Bell, X, Eye, EyeOff } from 'lucide-react';
+import { fetchAccounts, deleteAccount, createAccount, getAccountAlerts, saveAccountAlerts, revealApiKey } from '../../services/api';
 import type { Account, AccountAlerts } from '../../types';
 import { useUIStore } from '../../stores/uiStore';
 import { Dialog } from '../ui/Dialog';
@@ -15,16 +15,52 @@ const generateApiKey = () => {
   ).join('_');
 };
 
-const MaskedKey = ({ apiKey }: { apiKey: string }) => {
+const MaskedKey = ({ accountId, maskedKey }: { accountId: string; maskedKey: string }) => {
   const addToast = useUIStore(s => s.addToast);
+  const [fullKey, setFullKey] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleReveal = async () => {
+    if (fullKey) { setFullKey(null); return; }
+    setLoading(true);
+    try {
+      const key = await revealApiKey(accountId);
+      setFullKey(key);
+    } catch {
+      addToast({ type: 'error', title: 'Failed to reveal key' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const copy = () => {
-    navigator.clipboard.writeText(apiKey);
+    const keyToCopy = fullKey || maskedKey;
+    if (!fullKey) {
+      addToast({ type: 'warning', title: 'Reveal key first', message: 'Click the eye icon to reveal the full key before copying' });
+      return;
+    }
+    navigator.clipboard.writeText(keyToCopy);
     addToast({ type: 'success', title: 'Copied!', message: 'API key copied to clipboard' });
   };
+
   return (
     <div className="flex items-center gap-2">
-      <span className="font-mono text-xs text-gray-400">{apiKey}</span>
-      <button onClick={copy} className="text-gray-500 hover:text-gray-300 transition-colors">
+      <span className="font-mono text-xs text-gray-400 max-w-[220px] truncate">
+        {fullKey || maskedKey}
+      </span>
+      <button
+        onClick={handleReveal}
+        className="text-gray-500 hover:text-gray-300 transition-colors"
+        title={fullKey ? 'Hide key' : 'Reveal full key'}
+        disabled={loading}
+      >
+        {loading ? <RefreshCw size={12} className="animate-spin" /> : fullKey ? <EyeOff size={12} /> : <Eye size={12} />}
+      </button>
+      <button
+        onClick={copy}
+        className={`transition-colors ${fullKey ? 'text-gray-500 hover:text-gray-300' : 'text-gray-700 cursor-not-allowed'}`}
+        title={fullKey ? 'Copy full key' : 'Reveal key first'}
+      >
         <Copy size={12} />
       </button>
     </div>
@@ -400,7 +436,7 @@ export const AccountsSection = () => {
                       <td className="py-2.5 pr-4 text-white font-medium">{acc.name}</td>
                       <td className="py-2.5 pr-4 text-gray-300">{acc.broker}</td>
                       <td className="py-2.5 pr-4 font-mono text-gray-400">{acc.accountNumber}</td>
-                      <td className="py-2.5 pr-4"><MaskedKey apiKey={acc.apiKey} /></td>
+                      <td className="py-2.5 pr-4"><MaskedKey accountId={acc.id} maskedKey={acc.apiKey} /></td>
                       <td className="py-2.5 pr-4">
                         <span className={`inline-flex items-center gap-1 ${acc.status === 'online' ? 'text-success' : 'text-gray-500'}`}>
                           <span className="w-1.5 h-1.5 rounded-full bg-current" />
