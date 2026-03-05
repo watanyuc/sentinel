@@ -178,6 +178,7 @@ void SendSnapshot()
       double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
       double curPrice  = PositionGetDouble(POSITION_PRICE_CURRENT);
       double posProfit = PositionGetDouble(POSITION_PROFIT);
+      double posSwap   = PositionGetDouble(POSITION_SWAP);
       double sl        = PositionGetDouble(POSITION_SL);
       double tp        = PositionGetDouble(POSITION_TP);
       datetime openTime = (datetime)PositionGetInteger(POSITION_TIME);
@@ -185,10 +186,10 @@ void SendSnapshot()
       if(orderCount > 0) ordersJson += ",";
       ordersJson += StringFormat(
          "{\"ticket\":%I64u,\"symbol\":\"%s\",\"type\":%d,\"lots\":%.2f,"
-         "\"openPrice\":%.5f,\"currentPrice\":%.5f,\"profit\":%.2f,"
+         "\"openPrice\":%.5f,\"currentPrice\":%.5f,\"profit\":%.2f,\"swap\":%.2f,"
          "\"openTime\":\"%s\",\"sl\":%.5f,\"tp\":%.5f}",
          ticket, JsonEscape(sym), posType, lots,
-         openPrice, curPrice, posProfit,
+         openPrice, curPrice, posProfit, posSwap,
          TimeToString(openTime, TIME_DATE|TIME_MINUTES|TIME_SECONDS),
          sl, tp
       );

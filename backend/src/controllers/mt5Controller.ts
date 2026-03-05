@@ -31,6 +31,7 @@ interface MT5PushPayload {
     openPrice: number;
     currentPrice: number;
     profit: number;
+    swap: number;
     openTime: string;
     sl: number;
     tp: number;
@@ -86,6 +87,7 @@ export const receiveMT5Push = (req: Request, res: Response): void => {
     openPrice: o.openPrice,
     currentPrice: o.currentPrice,
     profit: o.profit,
+    swap: o.swap ?? 0,
     openTime: o.openTime,
     sl: o.sl,
     tp: o.tp,

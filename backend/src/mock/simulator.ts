@@ -50,7 +50,7 @@ export const simulateAccounts = (accounts: Account[]): Account[] => {
       const contractSize = order.symbol === 'XAUUSD' ? 100 :
                            order.symbol === 'USDJPY' ? 1000 : 100000;
       const profit = priceDiff * order.lots * contractSize;
-      return { ...order, currentPrice, profit: parseFloat(profit.toFixed(2)) };
+      return { ...order, currentPrice, profit: parseFloat(profit.toFixed(2)), swap: order.swap ?? 0 };
     });
 
     const totalProfit = updatedOrders.reduce((sum, o) => sum + o.profit, 0);

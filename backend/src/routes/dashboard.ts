@@ -103,12 +103,12 @@ router.get('/today-pnl', async (req: AuthRequest, res: Response) => {
       closeTime: { gte: startOfDay },
       account: { userId: req.user!.id },
     },
-    select: { accountId: true, profit: true },
+    select: { accountId: true, profit: true, swap: true },
   });
 
   const pnlMap: Record<string, number> = {};
   for (const t of trades) {
-    pnlMap[t.accountId] = (pnlMap[t.accountId] || 0) + t.profit;
+    pnlMap[t.accountId] = (pnlMap[t.accountId] || 0) + t.profit + t.swap;
   }
 
   // Round values

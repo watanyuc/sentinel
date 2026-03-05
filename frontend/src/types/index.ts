@@ -18,6 +18,7 @@ export interface Order {
   openPrice: number;
   currentPrice: number;
   profit: number;
+  swap: number;
   openTime: string;
   sl: number;
   tp: number;
@@ -176,6 +177,7 @@ export interface ClosedTrade {
   openPrice: number;
   closePrice: number;
   profit: number;
+  swap: number;
   openTime: string;
   closeTime: string;
   sl: number;
