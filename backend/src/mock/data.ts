@@ -49,4 +49,5 @@ export interface Account {
   groupId?: string | null;
   groupName?: string;
   groupColor?: string;
+  brokerTimeOffset?: number; // seconds from UTC (e.g. 7200 = GMT+2)
 }

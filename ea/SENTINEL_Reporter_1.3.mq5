@@ -228,6 +228,9 @@ void SendSnapshot()
    }
    pendingJson += "]";
 
+   // Broker server timezone offset (seconds from UTC)
+   int brokerTimeOffset = (int)(TimeCurrent() - TimeGMT());
+
    // Build full JSON payload
    string json = StringFormat(
       "{"
@@ -244,6 +247,7 @@ void SendSnapshot()
       "\"freeMargin\":%.2f,"
       "\"marginLevel\":%.2f,"
       "\"profit\":%.2f,"
+      "\"brokerTimeOffset\":%d,"
       "\"orders\":%s,"
       "\"pending\":%s"
       "}",
@@ -255,6 +259,7 @@ void SendSnapshot()
       JsonEscape(currency),
       leverage,
       balance, equity, margin, freeMargin, marginLvl, profit,
+      brokerTimeOffset,
       ordersJson,
       pendingJson
    );

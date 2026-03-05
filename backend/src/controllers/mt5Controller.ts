@@ -46,6 +46,7 @@ interface MT5PushPayload {
     tp: number;
     expiration: string;
   }[];
+  brokerTimeOffset?: number;
 }
 
 const ORDER_TYPE_MAP: Record<number, Order['type']> = {
@@ -129,6 +130,7 @@ export const receiveMT5Push = (req: Request, res: Response): void => {
     ...(payload.broker && { broker: payload.broker }),
     ...(payload.server && { server: payload.server }),
     ...(payload.leverage && { leverage: payload.leverage }),
+    ...(payload.brokerTimeOffset != null && { brokerTimeOffset: payload.brokerTimeOffset }),
   };
 
   // Detect closed trades BEFORE updating (compare previous vs current orders)
