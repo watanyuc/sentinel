@@ -80,6 +80,13 @@ export const receiveMT5Push = (req: Request, res: Response): void => {
 
   const { account, userId } = result;
 
+  // DEBUG: log brokerTimeOffset
+  if (payload.brokerTimeOffset != null) {
+    console.log(`[MT5] ${account.name} brokerTimeOffset=${payload.brokerTimeOffset}s (GMT+${payload.brokerTimeOffset / 3600})`);
+  } else {
+    console.log(`[MT5] ${account.name} — NO brokerTimeOffset sent (using default GMT+2)`);
+  }
+
   const orders: Order[] = (payload.orders || []).map(o => ({
     ticket: o.ticket,
     symbol: o.symbol,

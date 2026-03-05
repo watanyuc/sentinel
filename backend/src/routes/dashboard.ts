@@ -144,6 +144,17 @@ router.get('/today-pnl', async (req: AuthRequest, res: Response) => {
     }
   }
 
+  // DEBUG: log today-pnl calculation
+  console.log(`[TodayPnl] UTC now: ${now.toISOString()}, earliestStart: ${earliestStart.toISOString()}, totalTrades: ${trades.length}`);
+  for (const a of accounts) {
+    const offset = offsetMap.get(a.id) ?? 7200;
+    const offsetMs = offset * 1000;
+    const brokerNow = new Date(now.getTime() + offsetMs);
+    const brokerMidnight = new Date(Date.UTC(brokerNow.getUTCFullYear(), brokerNow.getUTCMonth(), brokerNow.getUTCDate()));
+    const accountStart = new Date(brokerMidnight.getTime() - offsetMs);
+    console.log(`  ${a.name}: offset=${offset}s(GMT+${offset/3600}) startUTC=${accountStart.toISOString()} P/L=${pnlMap[a.id] ?? 0}`);
+  }
+
   // Round values
   for (const id of Object.keys(pnlMap)) {
     pnlMap[id] = parseFloat(pnlMap[id].toFixed(2));
