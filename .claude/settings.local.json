@@ -31,7 +31,14 @@
       "Bash(find:*)",
       "Bash(npm uninstall:*)",
       "Bash(npx tsc:*)",
-      "Bash(git -C C:/Users/Keng/SENTINEL status --short)"
+      "Bash(git -C C:/Users/Keng/SENTINEL status --short)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(ssh:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where:*)",
+      "Bash(git status:*)"
     ]
   }
 }

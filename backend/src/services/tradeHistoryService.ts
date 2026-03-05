@@ -52,6 +52,7 @@ export const detectClosedTrades = async (
           closePrice: order.currentPrice,
           profit: order.profit,
           swap: order.swap ?? 0,
+          commission: order.commission ?? 0,
           openTime: new Date(order.openTime),
           sl: order.sl,
           tp: order.tp,

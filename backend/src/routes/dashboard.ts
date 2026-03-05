@@ -125,7 +125,7 @@ router.get('/today-pnl', async (req: AuthRequest, res: Response) => {
       closeTime: { gte: earliestStart },
       account: { userId: req.user!.id },
     },
-    select: { accountId: true, profit: true, swap: true, closeTime: true },
+    select: { accountId: true, profit: true, swap: true, commission: true, closeTime: true },
   });
 
   // Filter per-account based on each account's broker midnight
@@ -140,7 +140,7 @@ router.get('/today-pnl', async (req: AuthRequest, res: Response) => {
     const accountStartOfDay = new Date(brokerMidnight.getTime() - offsetMs);
 
     if (t.closeTime >= accountStartOfDay) {
-      pnlMap[t.accountId] = (pnlMap[t.accountId] || 0) + t.profit + t.swap;
+      pnlMap[t.accountId] = (pnlMap[t.accountId] || 0) + t.profit + t.swap + t.commission;
     }
   }
 

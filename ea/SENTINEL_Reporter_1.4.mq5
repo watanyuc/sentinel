@@ -4,7 +4,7 @@
 //|  ส่งข้อมูล account + orders มายัง SENTINEL backend ทุก N วินาที  |
 //+------------------------------------------------------------------+
 #property copyright "SENTINEL"
-#property version   "1.20"
+#property version   "1.40"
 #property strict
 
 #include <Trade/Trade.mqh>
@@ -49,7 +49,7 @@ int OnInit()
    // Use OnTimer as primary sender (works even when market is closed)
    EventSetTimer(InpIntervalSec);
 
-   Print("SENTINEL Reporter v1.20 started | Account: ", AccountInfoInteger(ACCOUNT_LOGIN),
+   Print("SENTINEL Reporter v1.40 started | Account: ", AccountInfoInteger(ACCOUNT_LOGIN),
          " | Server: ", AccountInfoString(ACCOUNT_SERVER),
          " | Interval: ", InpIntervalSec, "s");
    return INIT_SUCCEEDED;
@@ -183,13 +183,24 @@ void SendSnapshot()
       double tp        = PositionGetDouble(POSITION_TP);
       datetime openTime = (datetime)PositionGetInteger(POSITION_TIME);
 
+      // Get commission from deal history for this position
+      double posCommission = 0;
+      long posId = (long)PositionGetInteger(POSITION_IDENTIFIER);
+      if(HistorySelectByPosition(posId)) {
+         for(int d = 0; d < HistoryDealsTotal(); d++) {
+            ulong dealTicket = HistoryDealGetTicket(d);
+            posCommission += HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
+         }
+      }
+
       if(orderCount > 0) ordersJson += ",";
       ordersJson += StringFormat(
          "{\"ticket\":%I64u,\"symbol\":\"%s\",\"type\":%d,\"lots\":%.2f,"
          "\"openPrice\":%.5f,\"currentPrice\":%.5f,\"profit\":%.2f,\"swap\":%.2f,"
-         "\"openTime\":\"%s\",\"sl\":%.5f,\"tp\":%.5f}",
+         "\"commission\":%.2f,\"openTime\":\"%s\",\"sl\":%.5f,\"tp\":%.5f}",
          ticket, JsonEscape(sym), posType, lots,
          openPrice, curPrice, posProfit, posSwap,
+         posCommission,
          TimeToString(openTime, TIME_DATE|TIME_MINUTES|TIME_SECONDS),
          sl, tp
       );

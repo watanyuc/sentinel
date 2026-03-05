@@ -100,6 +100,7 @@ model ClosedTrade {
   closePrice Float
   profit     Float
   swap       Float    @default(0)
+  commission Float    @default(0)
   openTime   DateTime
   closeTime  DateTime @default(now())
   sl         Float    @default(0)

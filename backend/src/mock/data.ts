@@ -7,6 +7,7 @@ export interface Order {
   currentPrice: number;
   profit: number;
   swap: number;
+  commission: number;
   openTime: string;
   sl: number;
   tp: number;
