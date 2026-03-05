@@ -4,7 +4,7 @@ import { broadcastToUser } from '../websocket/broadcaster';
 import { checkAlerts, checkOfflineAlert } from '../services/alertService';
 import { commandQueue } from '../services/commandQueue';
 import { sendCloseAllNotification } from '../services/commandNotifier';
-import { detectClosedTrades } from '../services/tradeHistoryService';
+import { detectClosedTrades, recordClosedDeals } from '../services/tradeHistoryService';
 import { recordSnapshot } from '../services/equityService';
 import { markAsReal, unmarkAsReal } from '../mock/simulator';
 import type { Account, Order, PendingOrder } from '../mock/data';
@@ -48,6 +48,20 @@ interface MT5PushPayload {
     expiration: string;
   }[];
   brokerTimeOffset?: number;
+  closedDeals?: {
+    positionId: number;
+    ticket: number;
+    symbol: string;
+    type: number;
+    lots: number;
+    openPrice: number;
+    closePrice: number;
+    profit: number;
+    swap: number;
+    commission: number;
+    openTime: string;
+    closeTime: string;
+  }[];
 }
 
 const ORDER_TYPE_MAP: Record<number, Order['type']> = {
@@ -80,13 +94,6 @@ export const receiveMT5Push = (req: Request, res: Response): void => {
   }
 
   const { account, userId } = result;
-
-  // DEBUG: log brokerTimeOffset
-  if (payload.brokerTimeOffset != null) {
-    console.log(`[MT5] ${account.name} brokerTimeOffset=${payload.brokerTimeOffset}s (GMT+${payload.brokerTimeOffset / 3600})`);
-  } else {
-    console.log(`[MT5] ${account.name} — NO brokerTimeOffset sent (using default GMT+2)`);
-  }
 
   const orders: Order[] = (payload.orders || []).map(o => ({
     ticket: o.ticket,
@@ -142,7 +149,13 @@ export const receiveMT5Push = (req: Request, res: Response): void => {
     ...(payload.brokerTimeOffset != null && { brokerTimeOffset: payload.brokerTimeOffset }),
   };
 
-  // Detect closed trades BEFORE updating (compare previous vs current orders)
+  // Record closed trades: prefer EA-reported deals (exact P/L), fallback to position diff
+  if (payload.closedDeals && payload.closedDeals.length > 0) {
+    const brokerOffset = payload.brokerTimeOffset ?? 7200;
+    recordClosedDeals(account.id, payload.closedDeals, brokerOffset)
+      .catch(err => console.error('[TradeHistory] recordClosedDeals error:', err.message));
+  }
+  // Always run position diff detection as fallback (catches trades from old EAs)
   detectClosedTrades(account.id, orders)
     .catch(err => console.error('[TradeHistory] detectClosedTrades error:', err.message));
 

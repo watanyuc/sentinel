@@ -17,6 +17,7 @@ input string   InpBotName       = "";                     // ชื่อ bot (�
 
 //--- Global Variables
 datetime g_lastSend = 0;
+datetime g_lastDealTime = 0;  // Track last processed deal time for closed deals
 int      g_errorCount = 0;
 CTrade   g_trade;
 
@@ -48,6 +49,9 @@ int OnInit()
 
    // Use OnTimer as primary sender (works even when market is closed)
    EventSetTimer(InpIntervalSec);
+
+   // Initialize deal tracking to "now" so we don't re-send old deals
+   g_lastDealTime = TimeCurrent();
 
    Print("SENTINEL Reporter v1.40 started | Account: ", AccountInfoInteger(ACCOUNT_LOGIN),
          " | Server: ", AccountInfoString(ACCOUNT_SERVER),
@@ -136,6 +140,102 @@ void ExecuteCloseAll()
 
    Print("SENTINEL: CloseAll complete — closed: ", closed,
          ", deleted pending: ", deleted, ", errors: ", errors);
+}
+
+//+------------------------------------------------------------------+
+// Build closed deals JSON from MT5 deal history (exact P/L)
+//+------------------------------------------------------------------+
+string BuildClosedDealsJson()
+{
+   string json = "[";
+   int count = 0;
+
+   // Look for closing deals since last check (with 5-second overlap for safety)
+   datetime fromTime = g_lastDealTime - 5;
+   datetime toTime = TimeCurrent();
+
+   if(!HistorySelect(fromTime, toTime)) return "[]";
+
+   datetime maxDealTime = g_lastDealTime;
+
+   for(int i = 0; i < HistoryDealsTotal(); i++) {
+      ulong dealTicket = HistoryDealGetTicket(i);
+      if(dealTicket == 0) continue;
+
+      // Only closing deals (DEAL_ENTRY_OUT)
+      long dealEntry = HistoryDealGetInteger(dealTicket, DEAL_ENTRY);
+      if(dealEntry != DEAL_ENTRY_OUT) continue;
+
+      datetime dealTime = (datetime)HistoryDealGetInteger(dealTicket, DEAL_TIME);
+
+      // Skip deals we already processed
+      if(dealTime <= g_lastDealTime && count == 0) {
+         // Check if this specific deal was already sent — use dealTime > g_lastDealTime
+         // We use > instead of >= to avoid reprocessing, but with 5s overlap we need to track
+         if(dealTime < g_lastDealTime) continue;
+         // For deals exactly at g_lastDealTime, we skip them (already sent)
+         continue;
+      }
+
+      // Track latest deal time
+      if(dealTime > maxDealTime) maxDealTime = dealTime;
+
+      // Get deal data
+      long   positionId     = (long)HistoryDealGetInteger(dealTicket, DEAL_POSITION_ID);
+      string sym            = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
+      long   dealType       = HistoryDealGetInteger(dealTicket, DEAL_TYPE);
+      double lots           = HistoryDealGetDouble(dealTicket, DEAL_VOLUME);
+      double closePrice     = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
+      double dealProfit     = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
+      double dealSwap       = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
+      double dealCommission = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
+
+      // Get entry info (open price, entry commission, open time) from position's deal history
+      double openPrice = 0;
+      double entryCommission = 0;
+      datetime openTime = 0;
+      int posType = 0; // 0=BUY, 1=SELL (from entry deal)
+
+      if(HistorySelectByPosition(positionId)) {
+         for(int d = 0; d < HistoryDealsTotal(); d++) {
+            ulong dt = HistoryDealGetTicket(d);
+            long entry = HistoryDealGetInteger(dt, DEAL_ENTRY);
+            if(entry == DEAL_ENTRY_IN) {
+               openPrice = HistoryDealGetDouble(dt, DEAL_PRICE);
+               entryCommission += HistoryDealGetDouble(dt, DEAL_COMMISSION);
+               openTime = (datetime)HistoryDealGetInteger(dt, DEAL_TIME);
+               long entryType = HistoryDealGetInteger(dt, DEAL_TYPE);
+               posType = (entryType == DEAL_TYPE_BUY) ? 0 : 1;
+            }
+         }
+      }
+
+      // Re-select time-based history for next iteration
+      HistorySelect(fromTime, toTime);
+
+      // Total commission = entry + exit
+      double totalCommission = entryCommission + dealCommission;
+
+      if(count > 0) json += ",";
+      json += StringFormat(
+         "{\"positionId\":%I64d,\"ticket\":%I64u,\"symbol\":\"%s\",\"type\":%d,"
+         "\"lots\":%.2f,\"openPrice\":%.5f,\"closePrice\":%.5f,"
+         "\"profit\":%.2f,\"swap\":%.2f,\"commission\":%.2f,"
+         "\"openTime\":\"%s\",\"closeTime\":\"%s\"}",
+         positionId, dealTicket, JsonEscape(sym), posType,
+         lots, openPrice, closePrice,
+         dealProfit, dealSwap, totalCommission,
+         TimeToString(openTime, TIME_DATE|TIME_MINUTES|TIME_SECONDS),
+         TimeToString(dealTime, TIME_DATE|TIME_MINUTES|TIME_SECONDS)
+      );
+      count++;
+   }
+
+   // Update last deal time for next iteration
+   if(maxDealTime > g_lastDealTime) g_lastDealTime = maxDealTime;
+
+   json += "]";
+   return json;
 }
 
 //+------------------------------------------------------------------+
@@ -239,6 +339,9 @@ void SendSnapshot()
    }
    pendingJson += "]";
 
+   // Build closed deals JSON from MT5 deal history (exact P/L)
+   string closedDealsJson = BuildClosedDealsJson();
+
    // Broker server timezone offset (seconds from UTC)
    int brokerTimeOffset = (int)(TimeCurrent() - TimeGMT());
 
@@ -260,7 +363,8 @@ void SendSnapshot()
       "\"profit\":%.2f,"
       "\"brokerTimeOffset\":%d,"
       "\"orders\":%s,"
-      "\"pending\":%s"
+      "\"pending\":%s,"
+      "\"closedDeals\":%s"
       "}",
       JsonEscape(InpApiKey),
       accLogin,
@@ -272,7 +376,8 @@ void SendSnapshot()
       balance, equity, margin, freeMargin, marginLvl, profit,
       brokerTimeOffset,
       ordersJson,
-      pendingJson
+      pendingJson,
+      closedDealsJson
    );
 
    // Send via WebRequest

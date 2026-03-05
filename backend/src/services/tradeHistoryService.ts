@@ -69,6 +69,82 @@ export const detectClosedTrades = async (
   }
 };
 
+/**
+ * Record closed deals sent directly from EA's deal history.
+ * These have exact P/L including commission — much more accurate than position diff.
+ */
+export interface ClosedDeal {
+  positionId: number;
+  ticket: number;
+  symbol: string;
+  type: number; // 0=BUY, 1=SELL
+  lots: number;
+  openPrice: number;
+  closePrice: number;
+  profit: number;
+  swap: number;
+  commission: number;
+  openTime: string;
+  closeTime: string;
+}
+
+const TYPE_MAP: Record<number, string> = { 0: 'BUY', 1: 'SELL' };
+
+/** Parse MT5 time string (broker server time) and convert to UTC */
+const mt5TimeToUtc = (timeStr: string, brokerOffsetSec: number): Date => {
+  // MT5 format: "YYYY.MM.DD HH:MM:SS" — replace dots with dashes for JS parsing
+  const normalized = timeStr.replace(/\./g, '-');
+  const brokerTime = new Date(normalized);
+  // Convert broker server time to UTC: subtract the broker offset
+  return new Date(brokerTime.getTime() - brokerOffsetSec * 1000);
+};
+
+export const recordClosedDeals = async (
+  accountId: string,
+  deals: ClosedDeal[],
+  brokerOffsetSec: number = 7200,
+): Promise<void> => {
+  for (const deal of deals) {
+    try {
+      // Use positionId as the ticket for unique constraint (position = trade in MT5)
+      await prisma.closedTrade.upsert({
+        where: {
+          accountId_ticket: { accountId, ticket: deal.positionId },
+        },
+        update: {
+          // Update with exact values from deal history
+          profit: deal.profit,
+          swap: deal.swap,
+          commission: deal.commission,
+          closePrice: deal.closePrice,
+          closeTime: mt5TimeToUtc(deal.closeTime, brokerOffsetSec),
+        },
+        create: {
+          accountId,
+          ticket: deal.positionId,
+          symbol: deal.symbol,
+          type: TYPE_MAP[deal.type] ?? 'BUY',
+          lots: deal.lots,
+          openPrice: deal.openPrice,
+          closePrice: deal.closePrice,
+          profit: deal.profit,
+          swap: deal.swap,
+          commission: deal.commission,
+          openTime: mt5TimeToUtc(deal.openTime, brokerOffsetSec),
+          closeTime: mt5TimeToUtc(deal.closeTime, brokerOffsetSec),
+          sl: 0,
+          tp: 0,
+        },
+      });
+      const net = deal.profit + deal.swap + deal.commission;
+      console.log(`[TradeHistory] Deal #${deal.positionId} ${deal.symbol} net: ${net.toFixed(2)} (profit:${deal.profit} swap:${deal.swap} comm:${deal.commission})`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      console.error(`[TradeHistory] Error recording deal #${deal.positionId}:`, msg);
+    }
+  }
+};
+
 interface TradeQueryParams {
   page?: number;
   limit?: number;
