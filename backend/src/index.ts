@@ -32,7 +32,7 @@ const corsOrigins = process.env.CORS_ORIGIN
   : ['http://localhost:5173', 'http://127.0.0.1:5173'];
 app.use(cors({ origin: corsOrigins, credentials: true }));
 
-app.use(express.json());
+app.use(express.json({ limit: '2mb' })); // Increased for large closedDeals payloads (500+ trades)
 
 app.use('/api/auth', authRouter);
 app.use('/api/accounts', accountsRouter);
