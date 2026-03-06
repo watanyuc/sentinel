@@ -50,8 +50,12 @@ int OnInit()
    // Use OnTimer as primary sender (works even when market is closed)
    EventSetTimer(InpIntervalSec);
 
-   // Initialize deal tracking to "now" so we don't re-send old deals
-   g_lastDealTime = TimeCurrent();
+   // Initialize deal tracking to broker midnight today so first run backfills
+   // all of today's closed deals (profit+swap+commission) from MT5 deal history
+   MqlDateTime dt;
+   TimeToStruct(TimeCurrent(), dt);
+   dt.hour = 0; dt.min = 0; dt.sec = 0;
+   g_lastDealTime = StructToTime(dt);
 
    Print("SENTINEL Reporter v1.40 started | Account: ", AccountInfoInteger(ACCOUNT_LOGIN),
          " | Server: ", AccountInfoString(ACCOUNT_SERVER),
