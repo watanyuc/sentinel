@@ -90,13 +90,18 @@ export interface ClosedDeal {
 
 const TYPE_MAP: Record<number, string> = { 0: 'BUY', 1: 'SELL' };
 
-/** Parse MT5 time string (broker server time) and convert to UTC */
+/** Parse MT5 time string (broker server time) and convert to UTC.
+ *  MT5 format: "YYYY.MM.DD HH:MM:SS" (dots in date, space separator)
+ *  We treat this as broker time, then subtract the broker offset to get UTC.
+ */
 const mt5TimeToUtc = (timeStr: string, brokerOffsetSec: number): Date => {
-  // MT5 format: "YYYY.MM.DD HH:MM:SS" — replace dots with dashes for JS parsing
-  const normalized = timeStr.replace(/\./g, '-');
-  const brokerTime = new Date(normalized);
-  // Convert broker server time to UTC: subtract the broker offset
-  return new Date(brokerTime.getTime() - brokerOffsetSec * 1000);
+  // "2024.03.15 14:30:45" → "2024-03-15T14:30:45Z"
+  // Adding 'Z' forces JS to treat the string as UTC (not local time).
+  // This gives us the broker time as a UTC timestamp, then we subtract the
+  // broker offset (e.g. GMT+2 = 7200s) to get the real UTC time.
+  const normalized = timeStr.replace(/\./g, '-').replace(' ', 'T') + 'Z';
+  const brokerTimeAsUtc = new Date(normalized);
+  return new Date(brokerTimeAsUtc.getTime() - brokerOffsetSec * 1000);
 };
 
 export const recordClosedDeals = async (

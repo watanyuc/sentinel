@@ -152,6 +152,7 @@ export const receiveMT5Push = (req: Request, res: Response): void => {
   // Record closed trades: prefer EA-reported deals (exact P/L), fallback to position diff
   if (payload.closedDeals && payload.closedDeals.length > 0) {
     const brokerOffset = payload.brokerTimeOffset ?? 7200;
+    console.log(`[TradeHistory] ${account.name} — ${payload.closedDeals.length} closed deal(s) from EA`);
     recordClosedDeals(account.id, payload.closedDeals, brokerOffset)
       .catch(err => console.error('[TradeHistory] recordClosedDeals error:', err.message));
   }
