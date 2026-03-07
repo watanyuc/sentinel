@@ -5,6 +5,7 @@
   "nav.dashboard": "Dashboard",
   "nav.analytics": "Analytics",
   "nav.trades": "Trades",
+  "nav.calendar": "Calendar",
   "nav.profile": "Profile Settings",
   "nav.admin": "User Management",
   "nav.audit": "Audit Log",

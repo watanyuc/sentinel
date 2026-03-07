@@ -277,3 +277,14 @@ export interface UserPreferences {
   language: string;
   theme: string;
 }
+
+// ─── Economic Calendar ───────────────────────────────────────────────────────
+export interface EconomicEvent {
+  title: string;
+  country: string;
+  date: string;        // ISO datetime e.g. "2025-01-06T08:30:00+00:00"
+  impact: 'High' | 'Medium' | 'Low' | 'Non-Economic' | string;
+  forecast: string;
+  previous: string;
+  actual: string;
+}

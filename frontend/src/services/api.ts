@@ -117,6 +117,11 @@ export const fetchTodayPnl = async (): Promise<Record<string, number>> => {
   return res.data;
 };
 
+export const fetchEconomicCalendar = async () => {
+  const res = await api.get('/dashboard/economic-calendar');
+  return res.data;
+};
+
 export const fetchHeatmapAccounts = async () => {
   const res = await api.get('/dashboard/heatmap/accounts');
   return res.data;

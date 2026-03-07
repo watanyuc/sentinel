@@ -1,4 +1,4 @@
-import { Shield, Wifi, WifiOff, LogOut, User, Settings, Users, ChevronDown, BarChart3, History, FileText, Sun, Moon, Globe } from 'lucide-react';
+import { Shield, Wifi, WifiOff, LogOut, User, Settings, Users, ChevronDown, BarChart3, History, FileText, Sun, Moon, Globe, CalendarDays } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { DualClock } from '../clocks/DualClock';
 import { useAccountStore } from '../../stores/accountStore';
@@ -49,9 +49,10 @@ export const Header = () => {
           {/* Nav links */}
           <nav className="hidden md:flex items-center gap-1">
             {[
-              { page: 'dashboard' as const, label: t('nav.dashboard'), icon: Shield },
-              { page: 'analytics' as const, label: t('nav.analytics'), icon: BarChart3 },
-              { page: 'trade-history' as const, label: t('nav.trades'), icon: History },
+              { page: 'dashboard' as const,     label: t('nav.dashboard'), icon: Shield },
+              { page: 'analytics' as const,     label: t('nav.analytics'), icon: BarChart3 },
+              { page: 'trade-history' as const, label: t('nav.trades'),    icon: History },
+              { page: 'calendar' as const,      label: t('nav.calendar'),  icon: CalendarDays },
             ].map(({ page, label, icon: Icon }) => (
               <button
                 key={page}
@@ -151,6 +152,13 @@ export const Header = () => {
                     >
                       <History size={14} />
                       {t('nav.trades')}
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-800 cursor-pointer outline-none"
+                      onSelect={() => setCurrentPage('calendar')}
+                    >
+                      <CalendarDays size={14} />
+                      {t('nav.calendar')}
                     </DropdownMenu.Item>
                     <DropdownMenu.Separator className="h-px bg-gray-800 my-1" />
                   </div>

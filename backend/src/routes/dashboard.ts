@@ -152,4 +152,49 @@ router.get('/today-pnl', async (req: AuthRequest, res: Response) => {
   res.json(pnlMap);
 });
 
+// ─── Economic Calendar (ForexFactory proxy) ─────────────────────────────────
+
+interface CalendarCache {
+  data: unknown;
+  expiry: number;
+}
+
+let calendarCache: CalendarCache | null = null;
+const CALENDAR_TTL = 30 * 60 * 1000; // 30 minutes
+
+router.get('/economic-calendar', async (_req: AuthRequest, res: Response) => {
+  try {
+    if (calendarCache && calendarCache.expiry > Date.now()) {
+      return res.json(calendarCache.data);
+    }
+
+    const response = await fetch(
+      'https://nfs.faireconomy.media/ff_calendar_thisweek.json',
+      {
+        headers: {
+          'User-Agent': 'SENTINEL/2.0',
+          'Accept': 'application/json',
+        },
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`ForexFactory responded with HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    calendarCache = { data, expiry: Date.now() + CALENDAR_TTL };
+    res.json(data);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[Calendar] Fetch failed:', msg);
+    // Return stale cache if available rather than an error
+    if (calendarCache) {
+      return res.json(calendarCache.data);
+    }
+    res.status(502).json({ error: `Failed to fetch economic calendar: ${msg}` });
+  }
+});
+
 export default router;
