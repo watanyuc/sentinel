@@ -64,6 +64,7 @@ export interface Account {
   groupColor?: string;
   protectionEnabled?: boolean;
   protectionDrawdown?: number | null;
+  brokerTimeOffset?: number | null;
 }
 
 export interface OverviewStats {
