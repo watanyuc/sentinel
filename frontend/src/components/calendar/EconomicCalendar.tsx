@@ -23,14 +23,21 @@ declare global {
 const SCRIPT_ID  = 'mql5EcoCalScript';
 const WIDGET_URL = 'https://www.mql5.com/en/investing-economic-calendar/widget/script/v1/widget.js';
 
-const WIDGET_CONFIG = {
+const WIDGET_CONFIG: {
+  width: string | number;
+  height: number;
+  timeZone: number;
+  currencies: string[];
+  importance: number[];
+  period: string;
+} = {
   width: 'auto',
   height: 680,
   timeZone: 7,   // UTC+7 (Thailand)
   currencies: ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF', 'CNY'],
   importance: [3, 2, 1],
   period: 'today',
-} as const;
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export const EconomicCalendar = () => {
