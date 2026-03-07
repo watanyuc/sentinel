@@ -75,6 +75,37 @@ export const closeAllOrders = async (id: string) => {
   return res.data;
 };
 
+export const openTrade = async (
+  accountId: string,
+  data: {
+    symbol: string;
+    action: 'BUY' | 'SELL';
+    volume: number;
+    price?: number;
+    sl?: number;
+    tp?: number;
+    comment?: string;
+  },
+) => {
+  const res = await api.post(`/accounts/${accountId}/open-trade`, data);
+  return res.data as { message: string; commandId: string };
+};
+
+export const closePosition = async (accountId: string, ticket: number) => {
+  const res = await api.post(`/accounts/${accountId}/close-position`, { ticket });
+  return res.data as { message: string; commandId: string };
+};
+
+export const setPositionSLTP = async (
+  accountId: string,
+  ticket: number,
+  sl: number,
+  tp: number,
+) => {
+  const res = await api.post(`/accounts/${accountId}/set-sltp`, { ticket, sl, tp });
+  return res.data as { message: string; commandId: string };
+};
+
 // Dashboard
 export const fetchOverview = async () => {
   const res = await api.get('/dashboard/overview');

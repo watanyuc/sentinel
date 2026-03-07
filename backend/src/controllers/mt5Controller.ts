@@ -185,7 +185,19 @@ export const receiveMT5Push = (req: Request, res: Response): void => {
   };
 
   if (commands.length > 0) {
-    response.commands = commands.map(cmd => ({ type: cmd.type }));
+    // Send full command payload so EA can execute correctly
+    response.commands = commands.map(cmd => {
+      const c: Record<string, unknown> = { id: cmd.id, type: cmd.type };
+      if (cmd.symbol   != null) c.symbol  = cmd.symbol;
+      if (cmd.action   != null) c.action  = cmd.action;
+      if (cmd.volume   != null) c.volume  = cmd.volume;
+      if (cmd.price    != null) c.price   = cmd.price;
+      if (cmd.sl       != null) c.sl      = cmd.sl;
+      if (cmd.tp       != null) c.tp      = cmd.tp;
+      if (cmd.comment  != null) c.comment = cmd.comment;
+      if (cmd.ticket   != null) c.ticket  = cmd.ticket;
+      return c;
+    });
 
     for (const cmd of commands) {
       if (cmd.type === 'CLOSE_ALL') {
@@ -194,7 +206,7 @@ export const receiveMT5Push = (req: Request, res: Response): void => {
       }
     }
 
-    console.log(`[MT5] Sent ${commands.length} commands to ${account.name}`);
+    console.log(`[MT5] Sent ${commands.length} command(s) to ${account.name}: ${commands.map(c => c.type).join(', ')}`);
   }
 
   res.json(response);

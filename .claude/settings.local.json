@@ -38,7 +38,8 @@
       "Bash(ssh:*)",
       "mcp__Claude_Preview__preview_start",
       "Bash(where:*)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(ping:*)"
     ]
   }
 }

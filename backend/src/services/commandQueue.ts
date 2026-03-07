@@ -1,9 +1,21 @@
+export type CommandType = 'CLOSE_ALL' | 'OPEN_TRADE' | 'CLOSE_POSITION' | 'SET_SLTP';
+
 export interface Command {
   id: string;
-  type: 'CLOSE_ALL';
+  type: CommandType;
   createdAt: number;
   accountId: string;
   userId: string;
+  // OPEN_TRADE fields
+  symbol?: string;
+  action?: 'BUY' | 'SELL';
+  volume?: number;
+  price?: number;   // 0 = market order
+  sl?: number;
+  tp?: number;
+  comment?: string;
+  // CLOSE_POSITION / SET_SLTP fields
+  ticket?: number;
 }
 
 // Map<apiKey, Command[]>

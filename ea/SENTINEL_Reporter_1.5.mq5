@@ -4,7 +4,7 @@
 //|  ส่งข้อมูล account + orders มายัง SENTINEL backend ทุก N วินาที  |
 //+------------------------------------------------------------------+
 #property copyright "SENTINEL"
-#property version   "1.50"
+#property version   "1.60"
 #property strict
 
 #include <Trade/Trade.mqh>
@@ -61,7 +61,7 @@ int OnInit()
    dt.hour = 0; dt.min = 0; dt.sec = 0;
    g_lastDealTime = StructToTime(dt);
 
-   Print("SENTINEL Reporter v1.50 started | Account: ", AccountInfoInteger(ACCOUNT_LOGIN),
+   Print("SENTINEL Reporter v1.60 started | Account: ", AccountInfoInteger(ACCOUNT_LOGIN),
          " | Server: ", AccountInfoString(ACCOUNT_SERVER),
          " | Interval: ", InpIntervalSec, "s");
    return INIT_SUCCEEDED;
@@ -93,19 +93,147 @@ void OnTick()
 }
 
 //+------------------------------------------------------------------+
-// Parse response and execute commands if present
+// JSON helper: extract double value by key
+//+------------------------------------------------------------------+
+double JsonGetDouble(string json, string key)
+{
+   string search = "\"" + key + "\":";
+   int pos = StringFind(json, search);
+   if(pos < 0) return 0.0;
+   pos += StringLen(search);
+   while(pos < StringLen(json) && StringGetCharacter(json, pos) == ' ') pos++;
+   int end = pos;
+   while(end < StringLen(json)) {
+      ushort c = StringGetCharacter(json, end);
+      if(c == ',' || c == '}' || c == ' ' || c == ']') break;
+      end++;
+   }
+   return StringToDouble(StringSubstr(json, pos, end - pos));
+}
+
+//+------------------------------------------------------------------+
+// JSON helper: extract long (int) value by key
+//+------------------------------------------------------------------+
+long JsonGetLong(string json, string key)
+{
+   string search = "\"" + key + "\":";
+   int pos = StringFind(json, search);
+   if(pos < 0) return 0;
+   pos += StringLen(search);
+   while(pos < StringLen(json) && StringGetCharacter(json, pos) == ' ') pos++;
+   int end = pos;
+   while(end < StringLen(json)) {
+      ushort c = StringGetCharacter(json, end);
+      if(c == ',' || c == '}' || c == ' ' || c == ']') break;
+      end++;
+   }
+   return StringToInteger(StringSubstr(json, pos, end - pos));
+}
+
+//+------------------------------------------------------------------+
+// JSON helper: extract string value by key  (unescaped)
+//+------------------------------------------------------------------+
+string JsonGetString(string json, string key)
+{
+   string search = "\"" + key + "\":\"";
+   int pos = StringFind(json, search);
+   if(pos < 0) return "";
+   pos += StringLen(search);
+   int end = StringFind(json, "\"", pos);
+   if(end < 0) return "";
+   return StringSubstr(json, pos, end - pos);
+}
+
+//+------------------------------------------------------------------+
+// Execute a single JSON command object
+//+------------------------------------------------------------------+
+void ExecuteCommand(string cmdJson)
+{
+   string cmdType = JsonGetString(cmdJson, "type");
+   string cmdId   = JsonGetString(cmdJson, "id");
+
+   if(cmdType == "CLOSE_ALL") {
+      Print("SENTINEL CMD [", cmdId, "]: CLOSE_ALL");
+      ExecuteCloseAll();
+   }
+   else if(cmdType == "CLOSE_POSITION") {
+      ulong ticket = (ulong)JsonGetLong(cmdJson, "ticket");
+      if(ticket > 0) {
+         Print("SENTINEL CMD [", cmdId, "]: CLOSE_POSITION #", ticket);
+         ExecuteClosePosition(ticket);
+      } else {
+         Print("SENTINEL CMD [", cmdId, "]: CLOSE_POSITION — missing ticket");
+      }
+   }
+   else if(cmdType == "SET_SLTP") {
+      ulong  ticket = (ulong)JsonGetLong(cmdJson, "ticket");
+      double sl     = JsonGetDouble(cmdJson, "sl");
+      double tp     = JsonGetDouble(cmdJson, "tp");
+      if(ticket > 0) {
+         Print("SENTINEL CMD [", cmdId, "]: SET_SLTP #", ticket, " sl=", sl, " tp=", tp);
+         ExecuteSetSLTP(ticket, sl, tp);
+      } else {
+         Print("SENTINEL CMD [", cmdId, "]: SET_SLTP — missing ticket");
+      }
+   }
+   else if(cmdType == "OPEN_TRADE") {
+      string symbol  = JsonGetString(cmdJson, "symbol");
+      string action  = JsonGetString(cmdJson, "action");
+      double volume  = JsonGetDouble(cmdJson, "volume");
+      double price   = JsonGetDouble(cmdJson, "price");
+      double sl      = JsonGetDouble(cmdJson, "sl");
+      double tp      = JsonGetDouble(cmdJson, "tp");
+      string comment = JsonGetString(cmdJson, "comment");
+      if(symbol != "" && volume > 0 && (action == "BUY" || action == "SELL")) {
+         Print("SENTINEL CMD [", cmdId, "]: OPEN_TRADE ", action, " ", volume, " ", symbol,
+               " price=", price, " sl=", sl, " tp=", tp);
+         ExecuteOpenTrade(symbol, action, volume, price, sl, tp, comment);
+      } else {
+         Print("SENTINEL CMD [", cmdId, "]: OPEN_TRADE — invalid params symbol=", symbol,
+               " action=", action, " volume=", volume);
+      }
+   }
+   else {
+      Print("SENTINEL CMD [", cmdId, "]: Unknown type=", cmdType);
+   }
+}
+
+//+------------------------------------------------------------------+
+// Parse response JSON and dispatch all commands in "commands" array
 //+------------------------------------------------------------------+
 void ProcessResponse(char &resultData[])
 {
    string response = CharArrayToString(resultData);
-
-   // Quick check: does response contain commands?
    if(StringFind(response, "\"commands\"") < 0) return;
 
-   // Check for CLOSE_ALL command
-   if(StringFind(response, "CLOSE_ALL") >= 0) {
-      Print("SENTINEL: >>> CLOSE_ALL command received from dashboard <<<");
-      ExecuteCloseAll();
+   // Find "commands":[ ... ]
+   int arrStart = StringFind(response, "\"commands\":[");
+   if(arrStart < 0) return;
+   arrStart = StringFind(response, "[", arrStart);
+   if(arrStart < 0) return;
+   int arrEnd = StringFind(response, "]", arrStart);
+   if(arrEnd < 0) return;
+
+   string cmdsStr = StringSubstr(response, arrStart + 1, arrEnd - arrStart - 1);
+   if(StringLen(cmdsStr) < 2) return; // empty array
+
+   // Iterate through individual { ... } objects in the array
+   int depth = 0;
+   int cmdStart = -1;
+   for(int i = 0; i < StringLen(cmdsStr); i++) {
+      ushort c = StringGetCharacter(cmdsStr, i);
+      if(c == '{') {
+         if(depth == 0) cmdStart = i;
+         depth++;
+      }
+      else if(c == '}') {
+         depth--;
+         if(depth == 0 && cmdStart >= 0) {
+            string cmdJson = StringSubstr(cmdsStr, cmdStart, i - cmdStart + 1);
+            ExecuteCommand(cmdJson);
+            cmdStart = -1;
+         }
+      }
    }
 }
 
@@ -114,40 +242,79 @@ void ProcessResponse(char &resultData[])
 //+------------------------------------------------------------------+
 void ExecuteCloseAll()
 {
-   int closed = 0;
-   int errors = 0;
+   int closed = 0, errors = 0;
 
-   // Phase 1: Close all open positions (iterate in reverse)
    for(int i = PositionsTotal() - 1; i >= 0; i--) {
       ulong ticket = PositionGetTicket(i);
       if(ticket == 0) continue;
-
-      if(g_trade.PositionClose(ticket)) {
-         closed++;
-         Print("SENTINEL: Closed position #", ticket);
-      } else {
-         errors++;
-         Print("SENTINEL: Failed to close #", ticket, " error=", GetLastError());
-      }
+      if(g_trade.PositionClose(ticket)) { closed++; Print("SENTINEL: Closed #", ticket); }
+      else { errors++; Print("SENTINEL: Failed close #", ticket, " err=", GetLastError()); }
    }
 
-   // Phase 2: Delete all pending orders
    int deleted = 0;
    for(int i = OrdersTotal() - 1; i >= 0; i--) {
       ulong ticket = OrderGetTicket(i);
       if(ticket == 0) continue;
-
-      if(g_trade.OrderDelete(ticket)) {
-         deleted++;
-         Print("SENTINEL: Deleted pending #", ticket);
-      } else {
-         errors++;
-         Print("SENTINEL: Failed to delete pending #", ticket, " error=", GetLastError());
-      }
+      if(g_trade.OrderDelete(ticket)) { deleted++; Print("SENTINEL: Deleted pending #", ticket); }
+      else { errors++; Print("SENTINEL: Failed delete pending #", ticket, " err=", GetLastError()); }
    }
 
-   Print("SENTINEL: CloseAll complete — closed: ", closed,
-         ", deleted pending: ", deleted, ", errors: ", errors);
+   Print("SENTINEL: CloseAll done — closed:", closed, " deleted:", deleted, " errors:", errors);
+}
+
+//+------------------------------------------------------------------+
+// Close a single position by ticket
+//+------------------------------------------------------------------+
+void ExecuteClosePosition(ulong ticket)
+{
+   if(g_trade.PositionClose(ticket))
+      Print("SENTINEL: Closed position #", ticket);
+   else
+      Print("SENTINEL: Failed to close #", ticket, " err=", GetLastError(),
+            " retcode=", g_trade.ResultRetcode());
+}
+
+//+------------------------------------------------------------------+
+// Modify SL/TP for a position  (0 = no change / remove)
+//+------------------------------------------------------------------+
+void ExecuteSetSLTP(ulong ticket, double sl, double tp)
+{
+   if(!PositionSelectByTicket(ticket)) {
+      Print("SENTINEL: SET_SLTP — position #", ticket, " not found");
+      return;
+   }
+   if(g_trade.PositionModify(ticket, sl, tp))
+      Print("SENTINEL: SL/TP set #", ticket, " sl=", sl, " tp=", tp);
+   else
+      Print("SENTINEL: Failed SET_SLTP #", ticket, " err=", GetLastError(),
+            " retcode=", g_trade.ResultRetcode());
+}
+
+//+------------------------------------------------------------------+
+// Open a market or limit order
+//+------------------------------------------------------------------+
+void ExecuteOpenTrade(string symbol, string action, double volume,
+                      double price, double sl, double tp, string comment)
+{
+   bool success = false;
+   if(action == "BUY") {
+      if(price <= 0) success = g_trade.Buy(volume, symbol, 0, sl, tp, comment);
+      else           success = g_trade.BuyLimit(volume, price, symbol, sl, tp,
+                                                 ORDER_TIME_GTC, 0, comment);
+   }
+   else if(action == "SELL") {
+      if(price <= 0) success = g_trade.Sell(volume, symbol, 0, sl, tp, comment);
+      else           success = g_trade.SellLimit(volume, price, symbol, sl, tp,
+                                                  ORDER_TIME_GTC, 0, comment);
+   }
+
+   if(success)
+      Print("SENTINEL: Opened ", action, " ", volume, " ", symbol,
+            " ticket=", g_trade.ResultOrder());
+   else
+      Print("SENTINEL: Failed OPEN ", action, " ", symbol,
+            " err=", GetLastError(), " retcode=", g_trade.ResultRetcode(),
+            " comment=", g_trade.ResultComment());
 }
 
 //+------------------------------------------------------------------+

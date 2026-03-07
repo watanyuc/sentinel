@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Account, AccountGroup } from '../../types';
+import type { Account, AccountGroup, Order } from '../../types';
 import { formatCurrency, formatLots, formatPercent, getDrawdownColor } from '../../utils/formatters';
 import { FlashNumber } from '../ui/FlashNumber';
 import { CloseAllDialog } from './CloseAllDialog';
 import { ProtectionSettings } from '../settings/ProtectionSettings';
-import { Wifi, WifiOff, XCircle, Shield, Folder } from 'lucide-react';
+import { PositionPanel } from './PositionPanel';
+import { NewTradeDialog } from './NewTradeDialog';
+import { Wifi, WifiOff, XCircle, Shield, Folder, LayoutList, PlusCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUIStore } from '../../stores/uiStore';
 import { fetchGroups, assignAccountGroup } from '../../services/api';
@@ -18,6 +20,8 @@ export const BotCard = ({ account, todayPnl = 0 }: Props) => {
   const [showCloseAll, setShowCloseAll] = useState(false);
   const [showProtection, setShowProtection] = useState(false);
   const [showGroupPicker, setShowGroupPicker] = useState(false);
+  const [showPositions, setShowPositions] = useState(false);
+  const [showNewTrade, setShowNewTrade] = useState(false);
   const [groups, setGroups] = useState<AccountGroup[]>([]);
   const groupRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -53,6 +57,9 @@ export const BotCard = ({ account, todayPnl = 0 }: Props) => {
 
   const isOnline = account.status === 'online';
   const orderCount = typeof account.orders === 'number' ? account.orders : account.orders.length;
+  const ordersArray: Order[] = Array.isArray(account.orders) ? account.orders : [];
+  // Real MT5 account: has brokerTimeOffset (set when first push received from EA)
+  const isRealAccount = account.brokerTimeOffset != null;
   const rawCur = account.currency || 'USD';
   // Display USDC as "USC" for readability
   const cur = rawCur.toUpperCase() === 'USDC' ? 'USC' : rawCur;
@@ -168,7 +175,7 @@ export const BotCard = ({ account, todayPnl = 0 }: Props) => {
           </div>
 
           {/* Today + P/L — prominent, right side */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
             <div className="text-right">
               <div className="text-[10px] text-gray-500">Today</div>
               <div className={`font-mono text-sm font-semibold ${todayPnl > 0 ? 'text-success' : todayPnl < 0 ? 'text-danger' : 'text-gray-400'}`}>
@@ -196,6 +203,33 @@ export const BotCard = ({ account, todayPnl = 0 }: Props) => {
               <Shield size={12} />
               {account.protectionEnabled && <span className="text-[10px]">ON</span>}
             </button>
+
+            {/* Trade buttons — only for real (MT5-connected) online accounts */}
+            {isRealAccount && isOnline && (
+              <>
+                <button
+                  onClick={() => setShowPositions(p => !p)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border ${
+                    showPositions
+                      ? 'border-accent-blue text-accent-blue bg-accent-blue/10'
+                      : 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-300'
+                  }`}
+                  title="Manage Positions"
+                >
+                  <LayoutList size={12} />
+                  {showPositions ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                </button>
+                <button
+                  onClick={() => setShowNewTrade(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-success/50 text-success hover:bg-success hover:text-white hover:border-success transition-all duration-150"
+                  title="Open New Trade"
+                >
+                  <PlusCircle size={12} />
+                  NEW
+                </button>
+              </>
+            )}
+
             <button
               onClick={() => isOnline && setShowCloseAll(true)}
               disabled={!isOnline}
@@ -215,11 +249,44 @@ export const BotCard = ({ account, todayPnl = 0 }: Props) => {
         <div className="mt-1.5 text-[10px] text-gray-600 truncate">{account.broker}</div>
       </div>
 
+      {/* Position Panel — inline expandable */}
+      {showPositions && (
+        <div className="border border-gray-800 rounded-xl mt-2 bg-bg-primary overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
+            <span className="text-xs font-medium text-gray-300 flex items-center gap-1.5">
+              <LayoutList size={12} className="text-accent-blue" />
+              Open Positions — {account.name}
+              <span className="text-gray-600 font-mono">({ordersArray.length})</span>
+            </span>
+            <button
+              onClick={() => setShowPositions(false)}
+              className="text-gray-600 hover:text-gray-400 transition-colors"
+            >
+              <ChevronUp size={14} />
+            </button>
+          </div>
+          <PositionPanel
+            accountId={account.id}
+            accountName={account.name}
+            orders={ordersArray}
+            currency={account.currency}
+          />
+        </div>
+      )}
+
       {showCloseAll && (
         <CloseAllDialog accountId={account.id} accountName={account.name} onClose={() => setShowCloseAll(false)} onSuccess={onSuccess} />
       )}
       {showProtection && (
         <ProtectionSettings accountId={account.id} accountName={account.name} onClose={() => setShowProtection(false)} />
+      )}
+      {showNewTrade && (
+        <NewTradeDialog
+          accountId={account.id}
+          accountName={account.name}
+          currency={account.currency}
+          onClose={() => setShowNewTrade(false)}
+        />
       )}
     </>
   );

@@ -108,6 +108,139 @@ router.post('/:id/close-all', (req: AuthRequest, res: Response) => {
   }
 });
 
+// POST /api/accounts/:id/open-trade — queue an open trade command to the EA
+router.post('/:id/open-trade', (req: AuthRequest, res: Response) => {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const { symbol, action, volume, price, sl, tp, comment } = req.body as {
+    symbol: string;
+    action: 'BUY' | 'SELL';
+    volume: number;
+    price?: number;
+    sl?: number;
+    tp?: number;
+    comment?: string;
+  };
+
+  if (!symbol || !action || !volume) {
+    res.status(400).json({ error: 'symbol, action, and volume are required' });
+    return;
+  }
+  if (action !== 'BUY' && action !== 'SELL') {
+    res.status(400).json({ error: 'action must be BUY or SELL' });
+    return;
+  }
+
+  const accounts = runtimeStore.getAccountsByUser(req.user!.id);
+  const account = accounts.find(a => a.id === id);
+
+  if (!account) {
+    res.status(404).json({ error: 'Account not found' });
+    return;
+  }
+  if (account.status === 'offline') {
+    res.status(400).json({ error: 'Account is offline' });
+    return;
+  }
+  if (!isReal(id)) {
+    res.status(400).json({ error: 'Cannot trade on simulated accounts' });
+    return;
+  }
+
+  const cmd = commandQueue.enqueue(account.apiKey, {
+    type: 'OPEN_TRADE',
+    accountId: id,
+    userId: req.user!.id,
+    symbol,
+    action,
+    volume,
+    price: price ?? 0,
+    sl: sl ?? 0,
+    tp: tp ?? 0,
+    comment: comment || 'SENTINEL',
+  });
+
+  logAudit(req.user!.id, 'open_trade', 'account', id,
+    JSON.stringify({ symbol, action, volume, price, sl, tp }));
+
+  res.json({ message: 'Open trade command queued', commandId: cmd.id });
+});
+
+// POST /api/accounts/:id/close-position — close a single position by ticket
+router.post('/:id/close-position', (req: AuthRequest, res: Response) => {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const { ticket } = req.body as { ticket: number };
+
+  if (!ticket) {
+    res.status(400).json({ error: 'ticket is required' });
+    return;
+  }
+
+  const accounts = runtimeStore.getAccountsByUser(req.user!.id);
+  const account = accounts.find(a => a.id === id);
+
+  if (!account) {
+    res.status(404).json({ error: 'Account not found' });
+    return;
+  }
+  if (account.status === 'offline') {
+    res.status(400).json({ error: 'Account is offline' });
+    return;
+  }
+  if (!isReal(id)) {
+    res.status(400).json({ error: 'Cannot close positions on simulated accounts' });
+    return;
+  }
+
+  const cmd = commandQueue.enqueue(account.apiKey, {
+    type: 'CLOSE_POSITION',
+    accountId: id,
+    userId: req.user!.id,
+    ticket,
+  });
+
+  logAudit(req.user!.id, 'close_position', 'account', id, JSON.stringify({ ticket }));
+  res.json({ message: 'Close position command queued', commandId: cmd.id });
+});
+
+// POST /api/accounts/:id/set-sltp — modify SL/TP for a single position
+router.post('/:id/set-sltp', (req: AuthRequest, res: Response) => {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const { ticket, sl, tp } = req.body as { ticket: number; sl: number; tp: number };
+
+  if (!ticket) {
+    res.status(400).json({ error: 'ticket is required' });
+    return;
+  }
+
+  const accounts = runtimeStore.getAccountsByUser(req.user!.id);
+  const account = accounts.find(a => a.id === id);
+
+  if (!account) {
+    res.status(404).json({ error: 'Account not found' });
+    return;
+  }
+  if (account.status === 'offline') {
+    res.status(400).json({ error: 'Account is offline' });
+    return;
+  }
+  if (!isReal(id)) {
+    res.status(400).json({ error: 'Cannot modify positions on simulated accounts' });
+    return;
+  }
+
+  const cmd = commandQueue.enqueue(account.apiKey, {
+    type: 'SET_SLTP',
+    accountId: id,
+    userId: req.user!.id,
+    ticket,
+    sl: sl ?? 0,
+    tp: tp ?? 0,
+  });
+
+  logAudit(req.user!.id, 'set_sltp', 'account', id, JSON.stringify({ ticket, sl, tp }));
+  res.json({ message: 'Set SL/TP command queued', commandId: cmd.id });
+});
+
 // GET /api/accounts/:id/apikey — reveal full API key (for copy)
 router.get('/:id/apikey', async (req: AuthRequest, res: Response) => {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
