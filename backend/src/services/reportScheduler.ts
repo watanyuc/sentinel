@@ -10,18 +10,48 @@ const lastSent = new Map<string, string>();
 
 let intervalId: NodeJS.Timeout | null = null;
 
+// All scheduler time logic uses Thai timezone (GMT+7)
+// VPS runs UTC — user configures report time in Thai time
+const REPORT_TZ = 'Asia/Bangkok';
+
+/** Returns date/time parts in Thai timezone */
+const getThaiParts = (): Record<string, string> => {
+  const parts: Record<string, string> = {};
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: REPORT_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    weekday: 'long',
+  }).formatToParts(new Date()).forEach(p => { parts[p.type] = p.value; });
+  return parts;
+};
+
+/** Current time as HH:MM in Thai timezone — matched against user's reportTime setting */
 const getCurrentHHMM = (): string => {
-  const now = new Date();
-  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const p = getThaiParts();
+  const hh = p.hour === '24' ? '00' : p.hour;
+  return `${hh}:${p.minute}`;
 };
 
+/** Day of week 1=Mon..7=Sun in Thai timezone */
 const getCurrentDayOfWeek = (): number => {
-  // 1=Mon..7=Sun (ISO standard)
-  const day = new Date().getDay();
-  return day === 0 ? 7 : day;
+  const p = getThaiParts();
+  const map: Record<string, number> = {
+    Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4,
+    Friday: 5, Saturday: 6, Sunday: 7,
+  };
+  return map[p.weekday] ?? 1;
 };
 
-const getTodayKey = (): string => new Date().toISOString().slice(0, 10);
+/** Today's date key YYYY-MM-DD in Thai timezone (avoids UTC day-boundary mismatch) */
+const getTodayKey = (): string => {
+  const p = getThaiParts();
+  return `${p.year}-${p.month}-${p.day}`;
+};
 
 const composeReport = async (userId: string): Promise<string> => {
   const accounts = runtimeStore.getAccountsByUser(userId);
@@ -40,7 +70,7 @@ const composeReport = async (userId: string): Promise<string> => {
   const metrics = await getPerformanceMetrics(userId);
 
   let msg = `[SENTINEL]\n📊 <b>DAILY REPORT</b>\n\n`;
-  msg += `📅 ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n\n`;
+  msg += `📅 ${new Date().toLocaleDateString('en-US', { timeZone: REPORT_TZ, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n\n`;
 
   msg += `<b>Portfolio Summary</b>\n`;
   msg += `Balance: <b>$${totalBalance.toFixed(2)}</b>\n`;
