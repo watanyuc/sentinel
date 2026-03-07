@@ -42,7 +42,7 @@ export const NewTradeDialog = ({ accountId, accountName, currency, onClose }: Pr
     setLoading(true);
     try {
       await openTrade(accountId, {
-        symbol: symbol.trim().toUpperCase(),
+        symbol: symbol.trim(),
         action,
         volume: vol,
         price: orderType === 'limit' ? parseFloat(price) : 0,
@@ -89,8 +89,8 @@ export const NewTradeDialog = ({ accountId, accountName, currency, onClose }: Pr
             <input
               type="text"
               value={symbol}
-              onChange={e => setSymbol(e.target.value.toUpperCase())}
-              placeholder="e.g. EURUSD, XAUUSD"
+              onChange={e => setSymbol(e.target.value)}
+              placeholder="e.g. EURUSD, XBTUSD.v (case-sensitive)"
               className={inputCls}
               autoFocus
             />
