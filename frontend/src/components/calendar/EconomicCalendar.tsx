@@ -1,96 +1,48 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CalendarDays, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 
-// ─── MQL5 Widget global type ──────────────────────────────────────────────────
-declare global {
-  interface Window {
-    MQL5?: {
-      Widget?: {
-        EconomicCalendar: new (config: {
-          width: string | number;
-          height: number;
-          timeZone: number;
-          currencies: string[];
-          importance: number[];
-          period: string;
-        }) => void;
-      };
-    };
-  }
-}
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-const SCRIPT_ID  = 'mql5EcoCalScript';
-const WIDGET_URL = 'https://www.mql5.com/en/investing-economic-calendar/widget/script/v1/widget.js';
-
-const WIDGET_CONFIG: {
-  width: string | number;
-  height: number;
-  timeZone: number;
-  currencies: string[];
-  importance: number[];
-  period: string;
-} = {
-  width: 'auto',
-  height: 680,
-  timeZone: 7,   // UTC+7 (Thailand)
-  currencies: ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'NZD', 'CAD', 'CHF', 'CNY'],
-  importance: [3, 2, 1],
-  period: 'today',
+// ─── TradingView Widget config ────────────────────────────────────────────────
+// colorTheme:"dark" matches SENTINEL's dark UI
+const TV_CONFIG = {
+  height: 660,
+  colorTheme: 'dark',
+  isTransparent: false,
+  locale: 'en',
+  importanceFilter: '-1,0,1',        // low, medium, high
+  countryFilter: 'us,eu,gb,jp,au,nz,ca,ch,cn',  // USD EUR GBP JPY AUD NZD CAD CHF CNY
 };
+
+const SCRIPT_URL = 'https://s3.tradingview.com/external-embedding/embed-widget-economic-calendar.js';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export const EconomicCalendar = () => {
-  const [status,    setStatus]    = useState<'loading' | 'ready' | 'error'>('loading');
-  const [reloadKey, setReloadKey] = useState(0);
+  const outerRef                      = useRef<HTMLDivElement>(null);
+  const [status,    setStatus]        = useState<'loading' | 'ready' | 'error'>('loading');
+  const [reloadKey, setReloadKey]     = useState(0);
 
   useEffect(() => {
-    let cancelled = false;
+    const outer = outerRef.current;
+    if (!outer) return;
 
-    // ── Cleanup previous instance ────────────────────────────────────────────
-    const oldScript = document.getElementById(SCRIPT_ID);
-    if (oldScript) oldScript.remove();
-
-    const container = document.getElementById('economicCalendarWidget_container');
-    if (container) container.innerHTML = '';
-
+    // ── Clean up previous widget ─────────────────────────────────────────────
+    outer.innerHTML = `<div class="tradingview-widget-container__widget"></div>`;
     setStatus('loading');
 
-    // ── Poll until MQL5 global is available, then init ──────────────────────
-    const tryInit = (attempts = 0) => {
-      if (cancelled) return;
-
-      if (window.MQL5?.Widget?.EconomicCalendar) {
-        try {
-          new window.MQL5.Widget.EconomicCalendar(WIDGET_CONFIG);
-          if (!cancelled) setStatus('ready');
-        } catch (err) {
-          console.error('[MQL5 Calendar] init error:', err);
-          if (!cancelled) setStatus('error');
-        }
-        return;
-      }
-
-      if (attempts < 40) {
-        setTimeout(() => tryInit(attempts + 1), 250); // up to 10 seconds
-      } else {
-        if (!cancelled) setStatus('error');
-      }
-    };
-
-    // ── Load widget script ───────────────────────────────────────────────────
+    // ── Inject TradingView script ─────────────────────────────────────────────
+    // TradingView's script reads its own textContent as JSON config
     const script = document.createElement('script');
-    script.id    = SCRIPT_ID;
-    script.src   = WIDGET_URL;
-    script.async = true;
-    script.onload  = () => tryInit();
-    script.onerror = () => { if (!cancelled) setStatus('error'); };
-    document.body.appendChild(script);
+    script.type    = 'text/javascript';
+    script.src     = SCRIPT_URL;
+    script.async   = true;
+    // Config is placed as textContent — TradingView reads via document.currentScript
+    script.textContent = JSON.stringify(TV_CONFIG);
+    script.onload  = () => setStatus('ready');
+    script.onerror = () => setStatus('error');
+
+    outer.appendChild(script);
 
     return () => {
-      cancelled = true;
-      const s = document.getElementById(SCRIPT_ID);
-      if (s) s.remove();
+      if (outer) outer.innerHTML = '';
     };
   }, [reloadKey]);
 
@@ -102,7 +54,7 @@ export const EconomicCalendar = () => {
           <CalendarDays size={18} className="text-accent-blue" />
           <h2 className="text-lg font-semibold text-white">Economic Calendar</h2>
           <span className="text-[10px] text-gray-500 bg-gray-800 border border-gray-700 px-2 py-0.5 rounded-full">
-            MQL5
+            TradingView
           </span>
         </div>
         <button
@@ -115,24 +67,24 @@ export const EconomicCalendar = () => {
         </button>
       </div>
 
-      {/* ── Loading state ── */}
+      {/* ── Loading ── */}
       {status === 'loading' && (
         <div className="flex items-center justify-center py-16 text-gray-500">
           <div className="text-center">
             <Loader2 size={28} className="mx-auto mb-3 animate-spin text-accent-blue" />
-            <p className="text-sm">Loading MQL5 calendar...</p>
+            <p className="text-sm">Loading TradingView calendar...</p>
           </div>
         </div>
       )}
 
-      {/* ── Error state ── */}
+      {/* ── Error ── */}
       {status === 'error' && (
         <div className="flex items-center justify-center py-16">
           <div className="text-center">
             <AlertCircle size={32} className="text-danger mx-auto mb-3" />
-            <p className="text-sm text-danger mb-2">Failed to load MQL5 calendar widget</p>
+            <p className="text-sm text-danger mb-2">Failed to load calendar widget</p>
             <p className="text-xs text-gray-500 mb-4">
-              Check your network connection or try refreshing
+              Check network connection or try refreshing
             </p>
             <button
               onClick={() => setReloadKey(k => k + 1)}
@@ -144,15 +96,12 @@ export const EconomicCalendar = () => {
         </div>
       )}
 
-      {/* ── MQL5 Widget container — always in DOM so widget can render into it ── */}
+      {/* ── TradingView Widget container ── */}
       <div
-        id="economicCalendarWidget"
-        className="economicCalendarWidget w-full rounded-xl overflow-hidden"
+        ref={outerRef}
+        className="tradingview-widget-container w-full rounded-xl overflow-hidden"
       >
-        <div
-          id="economicCalendarWidget_container"
-          className="economicCalendarWidget_container"
-        />
+        {/* Script + widget div injected via useEffect */}
       </div>
     </div>
   );
