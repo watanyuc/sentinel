@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Account, AccountGroup, Order } from '../../types';
-import { formatCurrency, formatLots, formatPercent, getDrawdownColor } from '../../utils/formatters';
+import { formatLots, formatPercent, getDrawdownColor } from '../../utils/formatters';
 import { FlashNumber } from '../ui/FlashNumber';
 import { CloseAllDialog } from './CloseAllDialog';
 import { ProtectionSettings } from '../settings/ProtectionSettings';
@@ -71,12 +71,14 @@ export const BotCard = ({ account, todayPnl = 0 }: Props) => {
     queryClient.invalidateQueries({ queryKey: ['heatmap-orders'] });
   };
 
+  const ddColor = getDrawdownColor(account.drawdown);
+
   return (
     <>
       <div className={`card transition-all duration-300 ${!isOnline ? 'opacity-60' : ''}`}>
 
-        {/* Header: Name + Status + Group + Account# */}
-        <div className="flex items-center justify-between mb-3">
+        {/* ── Header: Name + Drawdown + Account# ── */}
+        <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2 min-w-0">
             <div className={`w-2 h-2 rounded-full shrink-0 ${isOnline ? 'bg-success animate-pulse' : 'bg-gray-600'}`} />
             <span className="text-sm font-semibold text-white truncate">{account.name}</span>
@@ -84,8 +86,13 @@ export const BotCard = ({ account, todayPnl = 0 }: Props) => {
               ? <Wifi size={12} className="text-success shrink-0" />
               : <WifiOff size={12} className="text-gray-500 shrink-0" />
             }
+            {/* Drawdown — moved to header */}
+            <span className={`shrink-0 text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded bg-gray-800 ${ddColor}`}>
+              DD {formatPercent(account.drawdown)}
+            </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-gray-500 shrink-0 ml-2">
+
+          <div className="flex items-center gap-1.5 text-[11px] text-gray-500 shrink-0 ml-3">
             {/* Group picker */}
             <div className="relative" ref={groupRef}>
               <button
@@ -135,109 +142,112 @@ export const BotCard = ({ account, todayPnl = 0 }: Props) => {
           </div>
         </div>
 
-        {/* Stats: Balance | Equity | Drawdown */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
-          <div>
-            <div className="text-[10px] text-gray-500 mb-0.5">
-              Balance <span className="text-accent-blue font-medium">{cur}</span>
-            </div>
-            <div className="font-mono text-sm text-white font-medium leading-tight">{fmtNum(account.balance)}</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-gray-500 mb-0.5">Equity</div>
-            <div className="font-mono text-sm font-medium leading-tight">
-              <FlashNumber value={account.equity} format={fmtNum} positiveGreen={false} className="text-white" />
-            </div>
-          </div>
-          <div>
-            <div className="text-[10px] text-gray-500 mb-0.5">Drawdown</div>
-            <span className={`font-mono text-sm font-medium leading-tight ${getDrawdownColor(account.drawdown)}`}>
-              {formatPercent(account.drawdown)}
-            </span>
-          </div>
-        </div>
+        {/* ── Main row: Balance+Equity | Today+P/L+Lots | Actions ── */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
 
-        {/* Orders */}
-        <div className="flex items-center gap-1.5 text-xs mb-3">
-          <span className="text-gray-400 font-mono">{orderCount} open</span>
-          <span className="text-gray-700">|</span>
-          <span className="text-[10px] text-gray-500">Lot</span>
-          <span className="text-success font-mono text-[11px]">B:{formatLots(account.buyLots)}</span>
-          <span className="text-gray-700">/</span>
-          <span className="text-danger font-mono text-[11px]">S:{formatLots(account.sellLots)}</span>
-        </div>
-
-        {/* Today + P/L — prominent */}
-        <div className="flex items-end gap-4 mb-3">
-          <div className="shrink-0">
-            <div className="text-[10px] text-gray-500 mb-0.5">Today</div>
-            <div className={`font-mono text-sm font-semibold leading-tight ${
-              todayPnl > 0 ? 'text-success' : todayPnl < 0 ? 'text-danger' : 'text-gray-400'
-            }`}>
-              {todayPnl >= 0 ? '+' : '-'}{fmtNum(todayPnl)}
+          {/* Left: Balance + Equity */}
+          <div className="flex gap-5 shrink-0">
+            <div>
+              <div className="text-[10px] text-gray-500 mb-0.5">
+                Balance <span className="text-accent-blue font-medium">{cur}</span>
+              </div>
+              <div className="font-mono text-sm text-white font-medium">{fmtNum(account.balance)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-gray-500 mb-0.5">Equity</div>
+              <div className="font-mono text-sm font-medium">
+                <FlashNumber value={account.equity} format={fmtNum} positiveGreen={false} className="text-white" />
+              </div>
             </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] text-gray-500 mb-0.5">P/L</div>
-            <FlashNumber
-              value={account.profit}
-              format={(v) => `${v >= 0 ? '+' : '-'}${fmtNum(Math.abs(v))}`}
-              positiveGreen
-              className="font-mono text-xl font-bold leading-tight"
-            />
-          </div>
-          <button
-            onClick={() => setShowProtection(true)}
-            className={`flex items-center gap-1 p-1.5 rounded-lg transition-colors mb-0.5 shrink-0 ${
-              account.protectionEnabled
-                ? 'text-warning bg-warning/10 hover:bg-warning/20'
-                : 'text-gray-600 hover:text-gray-400 hover:bg-gray-800'
-            }`}
-            title="Drawdown Protection"
-          >
-            <Shield size={14} />
-            {account.protectionEnabled && <span className="text-[10px]">ON</span>}
-          </button>
-        </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-2">
-          {isRealAccount && isOnline && (
-            <>
-              <button
-                onClick={() => setShowPositions(p => !p)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border ${
-                  showPositions
-                    ? 'border-accent-blue text-accent-blue bg-accent-blue/10'
-                    : 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-300'
-                }`}
-                title="Manage Positions"
-              >
-                <LayoutList size={12} />
-                {showPositions ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-              </button>
-              <button
-                onClick={() => setShowNewTrade(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-success/50 text-success hover:bg-success hover:text-white hover:border-success transition-all duration-150"
-                title="Open New Trade"
-              >
-                <PlusCircle size={12} />
-                NEW
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => isOnline && setShowCloseAll(true)}
-            disabled={!isOnline}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border ml-auto ${
-              isOnline
-                ? 'border-danger/50 text-danger hover:bg-danger hover:text-white hover:border-danger cursor-pointer'
-                : 'border-gray-700 text-gray-600 cursor-not-allowed'
-            }`}
-            title="Close All Positions"
-          >
-            <XCircle size={12} />
-          </button>
+          {/* Center: Today + P/L (prominent) + Lots below */}
+          <div className="flex-1 flex justify-center min-w-[200px]">
+            <div>
+              {/* Today + P/L on same row */}
+              <div className="flex items-baseline gap-5">
+                <div>
+                  <div className="text-[10px] text-gray-500 mb-0.5">Today</div>
+                  <div className={`font-mono text-sm font-semibold ${
+                    todayPnl > 0 ? 'text-success' : todayPnl < 0 ? 'text-danger' : 'text-gray-400'
+                  }`}>
+                    {todayPnl >= 0 ? '+' : '-'}{fmtNum(todayPnl)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-gray-500 mb-0.5">P/L</div>
+                  <FlashNumber
+                    value={account.profit}
+                    format={(v) => `${v >= 0 ? '+' : '-'}${fmtNum(Math.abs(v))}`}
+                    positiveGreen
+                    className="font-mono text-xl font-bold"
+                  />
+                </div>
+              </div>
+              {/* Lots — below P/L */}
+              <div className="flex items-center gap-1.5 mt-1 text-[11px]">
+                <span className="text-gray-500 font-mono">{orderCount} open</span>
+                <span className="text-gray-700">|</span>
+                <span className="text-success font-mono">B:{formatLots(account.buyLots)}</span>
+                <span className="text-gray-700">/</span>
+                <span className="text-danger font-mono">S:{formatLots(account.sellLots)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Shield + Trade buttons */}
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
+            <button
+              onClick={() => setShowProtection(true)}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors ${
+                account.protectionEnabled
+                  ? 'text-warning bg-warning/10 hover:bg-warning/20'
+                  : 'text-gray-600 hover:text-gray-400 hover:bg-gray-800'
+              }`}
+              title="Drawdown Protection"
+            >
+              <Shield size={12} />
+              {account.protectionEnabled && <span className="text-[10px]">ON</span>}
+            </button>
+
+            {isRealAccount && isOnline && (
+              <>
+                <button
+                  onClick={() => setShowPositions(p => !p)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border ${
+                    showPositions
+                      ? 'border-accent-blue text-accent-blue bg-accent-blue/10'
+                      : 'border-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-300'
+                  }`}
+                  title="Manage Positions"
+                >
+                  <LayoutList size={12} />
+                  {showPositions ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                </button>
+                <button
+                  onClick={() => setShowNewTrade(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-success/50 text-success hover:bg-success hover:text-white hover:border-success transition-all duration-150"
+                  title="Open New Trade"
+                >
+                  <PlusCircle size={12} />
+                  NEW
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={() => isOnline && setShowCloseAll(true)}
+              disabled={!isOnline}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border ${
+                isOnline
+                  ? 'border-danger/50 text-danger hover:bg-danger hover:text-white hover:border-danger cursor-pointer'
+                  : 'border-gray-700 text-gray-600 cursor-not-allowed'
+              }`}
+              title="Close All Positions"
+            >
+              <XCircle size={12} />
+            </button>
+          </div>
         </div>
 
         {/* Broker */}
