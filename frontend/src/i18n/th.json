@@ -164,6 +164,7 @@
   "preferences.theme": "ธีม",
   "preferences.dark": "มืด",
   "preferences.light": "สว่าง",
+  "preferences.hud": "HUD",
 
   "audit.title": "บันทึกกิจกรรม",
   "audit.user": "ผู้ใช้",

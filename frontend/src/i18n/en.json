@@ -164,6 +164,7 @@
   "preferences.theme": "Theme",
   "preferences.dark": "Dark",
   "preferences.light": "Light",
+  "preferences.hud": "HUD",
 
   "audit.title": "Audit Log",
   "audit.user": "User",

@@ -9,7 +9,7 @@ interface Toast {
 }
 
 type Language = 'en' | 'th';
-type Theme = 'dark' | 'light';
+type Theme = 'dark' | 'light' | 'hud';
 
 interface UIState {
   toasts: Toast[];

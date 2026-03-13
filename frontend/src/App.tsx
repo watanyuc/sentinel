@@ -24,13 +24,10 @@ const useThemeSync = () => {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'light') {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    } else {
-      root.classList.add('dark');
-      root.classList.remove('light');
-    }
+    root.classList.remove('dark', 'light', 'hud');
+    if (theme === 'light') root.classList.add('light');
+    else if (theme === 'hud') root.classList.add('dark', 'hud');
+    else root.classList.add('dark');
   }, [theme]);
 };
 

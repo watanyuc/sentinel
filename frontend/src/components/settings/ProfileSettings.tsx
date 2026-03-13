@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, User, Lock, Save, Loader2, MessageSquare, Send, Bell, ChevronLeft, ChevronRight, Download, Globe, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, User, Lock, Save, Loader2, MessageSquare, Send, Bell, ChevronLeft, ChevronRight, Download, Globe, Sun, Moon, Cpu } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
@@ -313,7 +313,7 @@ export const ProfileSettings = () => {
 
           <div>
             <label className="block text-xs text-gray-400 mb-1">{t('preferences.theme')}</label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => { setTheme('dark'); savePreferences({ theme: 'dark' }).catch(() => {}); }}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
@@ -331,6 +331,17 @@ export const ProfileSettings = () => {
               >
                 <Sun size={14} />
                 {t('preferences.light')}
+              </button>
+              <button
+                onClick={() => { setTheme('hud'); savePreferences({ theme: 'hud' }).catch(() => {}); }}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  theme === 'hud'
+                    ? 'bg-cyan-500 text-black font-semibold'
+                    : 'bg-bg-primary border border-gray-700 text-gray-400'
+                }`}
+              >
+                <Cpu size={14} />
+                {t('preferences.hud')}
               </button>
             </div>
           </div>
