@@ -19,7 +19,7 @@ git pull
 echo ""
 echo "[2/4] Building backend..."
 cd backend
-npm install --omit=dev
+npm install
 npx prisma generate
 npx prisma db push
 npm run build
